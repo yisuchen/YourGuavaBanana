@@ -111,7 +111,7 @@ function extractImage(body) {
 }
 
 function extractSection(body, headingText) {
-    if (!body) return "";
+    if (!body) return null;
     const lines = body.split('\n');
     let content = [];
     let found = false;
@@ -133,9 +133,11 @@ function extractSection(body, headingText) {
         }
     }
 
-    // ✅ 修正：找不到欄位就回空字串（不要回整篇 body）
-    if (!found) return "";
-    return content.join('\n').trim();
+    // ✅ 修正：找不到欄位就回 null（不要回整篇 body）
+    if (!found) return null;
+    const result = content.join('\n').trim();
+    if (result.toLowerCase() === '_no response_') return "";
+    return result;
 }
 
 function updateLabelFilter(prompts) {
@@ -186,12 +188,32 @@ function setupEventListeners() {
 
 function openModal(prompt) {
     const modal = document.getElementById('promptModal');
-    const contentToCopy = prompt.promptText || prompt.body;
+    const contentToCopy = prompt.promptText !== null ? prompt.promptText : prompt.body;
 
     // Set content
     document.getElementById('modalImage').src = prompt.imageUrl || 'https://placehold.co/600x400/222/a0a0a0?text=No+Preview';
     document.getElementById('modalCategory').textContent = prompt.category;
     document.getElementById('modalPrompt').textContent = contentToCopy;
+
+    // Notes
+    const notesGroup = document.getElementById('modalNotesGroup');
+    const notesContainer = document.getElementById('modalNotes');
+    if (prompt.notes && prompt.notes.trim()) {
+        notesGroup.style.display = 'block';
+        notesContainer.textContent = prompt.notes;
+    } else {
+        notesGroup.style.display = 'none';
+    }
+
+    // Source
+    const sourceGroup = document.getElementById('modalSourceGroup');
+    const sourceContainer = document.getElementById('modalSource');
+    if (prompt.source && prompt.source.trim()) {
+        sourceGroup.style.display = 'block';
+        sourceContainer.textContent = prompt.source;
+    } else {
+        sourceGroup.style.display = 'none';
+    }
 
     // Tags
     const tagsGroup = document.getElementById('modalTagsGroup');
@@ -286,7 +308,7 @@ function renderCards(prompts) {
 
         const author = prompt.user ? prompt.user.login : 'unknown';
         const date = new Date(prompt.updated_at || Date.now()).toLocaleDateString();
-        const contentToDisplay = prompt.promptText || prompt.body;
+        const contentToDisplay = prompt.promptText !== null ? prompt.promptText : prompt.body;
 
         const imageHtml = prompt.imageUrl
             ? `<img src="${prompt.imageUrl}" alt="${escapeHtml(prompt.displayTitle || prompt.title)}" loading="lazy">`
