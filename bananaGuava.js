@@ -226,7 +226,7 @@ function openModal(prompt) {
 
     if (allLabels.length > 0) {
         tagsGroup.style.display = 'block';
-        tagsContainer.innerHTML = allLabels.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
+        tagsContainer.innerHTML = allLabels.map(tag => `<span class="hashtag">#${escapeHtml(tag)}</span>`).join(' ');
     } else {
         tagsGroup.style.display = 'none';
     }
@@ -234,7 +234,7 @@ function openModal(prompt) {
     // Share Link
     const shareLink = document.getElementById('modalShareLink');
     shareLink.className = 'btn btn-guava';
-    shareLink.innerHTML = '🍐 分享你的香蕉芭樂 (投稿新提示詞)';
+    shareLink.innerHTML = '🍐 分享你的香蕉芭樂';
     shareLink.href = `https://github.com/${CONFIG.owner}/${CONFIG.repo}/issues/new/choose`;
 
     // Edit Link
@@ -311,8 +311,8 @@ function renderCards(prompts) {
         ];
         const tagsHtml = [...new Set(allLabels)]
             .slice(0, 3) // Only show first 3 on card
-            .map(tag => `<span class="tag">${escapeHtml(tag)}</span>`)
-            .join('');
+            .map(tag => `<span class="hashtag">#${escapeHtml(tag)}</span>`)
+            .join(' ');
 
         const author = prompt.user ? prompt.user.login : 'unknown';
         const date = new Date(prompt.updated_at || Date.now()).toLocaleDateString();
@@ -326,12 +326,10 @@ function renderCards(prompts) {
         card.innerHTML = `
             <div class="card-image">${imageHtml}</div>
             <div class="card-body">
+                <div class="card-category-tag">${escapeHtml(prompt.category)}</div>
                 <h3 class="card-title">${escapeHtml(prompt.displayTitle || prompt.title)}</h3>
-                <div class="card-tags">${tagsHtml}</div>
                 <div class="card-content">${escapeHtml(contentToDisplay)}</div>
-                <div class="card-meta">
-                    <span style="color: var(--accent-guava)">●</span> ${escapeHtml(prompt.category)}
-                </div>
+                <div class="card-tags">${tagsHtml}</div>
             </div>
         `;
 

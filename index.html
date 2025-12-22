@@ -56,32 +56,29 @@
                 <div class="modal-right">
                     <div class="modal-info">
                         <div class="info-group">
-                            <label>分類</label>
-                            <div id="modalCategory" class="info-value"></div>
+                            <div id="modalCategory" class="card-category-tag"></div>
                         </div>
 
                         <div class="info-group">
-                            <div class="label-row">
-                                <label>提示詞</label>
-                                <button id="modalCopyBtn" class="btn btn-primary btn-sm" type="button">
-                                    複製提示詞
+                            <div class="prompt-container-wrapper">
+                                <div id="modalPrompt" class="prompt-display"></div>
+                                <button id="modalCopyBtn" class="btn btn-primary btn-copy-floating" type="button">
+                                    複製
                                 </button>
                             </div>
-                            <div id="modalPrompt" class="prompt-display"></div>
                         </div>
 
                         <div id="modalNotesGroup" class="info-group" style="display: none;">
                             <label>使用說明</label>
-                            <div id="modalNotes" class="info-value" style="white-space: pre-wrap; font-size: 0.9rem; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #333;"></div>
+                            <div id="modalNotes" class="info-value" style="white-space: pre-wrap; font-size: 0.9rem; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color);"></div>
                         </div>
 
                         <div id="modalSourceGroup" class="info-group" style="display: none;">
                             <label>來源 (Source)</label>
-                            <div id="modalSource" class="info-value" style="font-size: 0.9rem;"></div>
+                            <div id="modalSource" class="info-value" style="font-size: 0.9rem; color: var(--accent-guava);"></div>
                         </div>
 
                         <div id="modalTagsGroup" class="info-group">
-                            <label>標籤</label>
                             <div id="modalTags" class="tag-list"></div>
                         </div>
 
