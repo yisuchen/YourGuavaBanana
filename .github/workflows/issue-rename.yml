@@ -1,0 +1,30 @@
+name: Auto Rename Issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.issue.title, '[Prompt]:')
+    permissions:
+      issues: write
+    steps:
+      - name: Extract title from body
+        id: extract
+        run: |
+          # 尋找 ### 標題 之後第一個非空行的內容
+          BODY="${{ github.event.issue.body }}"
+          TITLE=$(echo "$BODY" | awk '/### 標題/{found=1;next} found && /[^[:space:]]/{print;exit}' | xargs)
+          if [ -n "$TITLE" ] && [ "$TITLE" != "_No response_" ]; then
+            echo "extracted_title=$TITLE" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update Issue Title
+        if: steps.extract.outputs.extracted_title != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW_TITLE="[Prompt]: ${{ steps.extract.outputs.extracted_title }}"
+          gh issue edit ${{ github.event.issue.number }} --title "$NEW_TITLE"
