@@ -8,7 +8,8 @@ body:
       value: |
         感謝你的投稿！請填寫以下資訊。
   - type: textarea
-    id: prompt    attributes:
+    id: prompt
+    attributes:
       label: 提示詞內容
       placeholder: 在此輸入你的提示詞...
     validations:
