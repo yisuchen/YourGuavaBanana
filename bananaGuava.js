@@ -59,18 +59,13 @@ async function fetchPrompts() {
 
                 let customTags = [];
 
-                // Add category to tags if it exists
-                if (categoryFromSection) {
-                    customTags.push(categoryFromSection.trim());
-                }
-
                 // Add tags from section if exists
                 if (tagsFromSection) {
                     const tags = tagsFromSection
                         .split(/[,，]/)
                         .map(t => t.trim())
                         .filter(t => t);
-                    customTags = [...customTags, ...tags];
+                    customTags = [...tags];
                 }
 
                 return {
@@ -151,6 +146,9 @@ function updateLabelFilter(prompts) {
                 labels.add(name);
             }
         });
+        if (p.category && p.category !== '未分類') {
+            labels.add(p.category);
+        }
         if (p.customTags) {
             p.customTags.forEach(t => labels.add(t));
         }
@@ -222,7 +220,7 @@ function openModal(prompt) {
     const allLabels = [...new Set([
         ...githubLabels.filter(l => l !== CONFIG.label && l !== 'pending'),
         ...(prompt.customTags || [])
-    ])];
+    ])].filter(tag => tag !== prompt.category);
 
     if (allLabels.length > 0) {
         tagsGroup.style.display = 'block';
@@ -267,7 +265,8 @@ function updateDisplay() {
     if (label) {
         filtered = filtered.filter(p =>
             p.labels.some(l => (typeof l === 'string' ? l : l.name) === label) ||
-            (p.customTags && p.customTags.includes(label))
+            (p.customTags && p.customTags.includes(label)) ||
+            p.category === label
         );
     }
 
@@ -308,7 +307,8 @@ function renderCards(prompts) {
         const allLabels = [
             ...githubLabels.filter(l => l !== CONFIG.label && l !== 'pending'),
             ...(prompt.customTags || [])
-        ];
+        ].filter(tag => tag !== prompt.category);
+
         const tagsHtml = [...new Set(allLabels)]
             .slice(0, 3) // Only show first 3 on card
             .map(tag => `<span class="hashtag">#${escapeHtml(tag)}</span>`)
