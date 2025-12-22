@@ -1,22 +1,14 @@
 name: 提示詞投稿 (Prompt Submission)
 description: 投稿新的香蕉提示詞到概念庫
-title: "🍌 [新投稿] 請填寫下方表單內容"
+title: "請在此輸入標題"
 labels: ["pending"]
 body:
   - type: markdown
     attributes:
       value: |
         感謝你的投稿！請填寫以下資訊。
-  - type: input
-    id: title
-    attributes:
-      label: 標題
-      placeholder: 例如：香蕉風格繪圖提示詞
-    validations:
-      required: true
   - type: textarea
-    id: prompt
-    attributes:
+    id: prompt    attributes:
       label: 提示詞內容
       placeholder: 在此輸入你的提示詞...
     validations:

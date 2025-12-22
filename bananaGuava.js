@@ -51,8 +51,11 @@ async function fetchPrompts() {
         allPrompts = data
             .filter(issue => !issue.pull_request)
             .map(issue => {
-                // ✅ 這裡是重點：從 issue body 的「### 標題」欄位抓顯示標題
-                const titleFromSection = extractSection(issue.body, '標題');
+                // ✅ 優先從 Issue 標題擷取內容（移除 [Prompt]: 前綴）
+                let displayTitle = issue.title.replace(/^\[Prompt\]:\s*/i, '').trim();
+                if (!displayTitle || displayTitle === '請在此輸入標題') {
+                    displayTitle = '未命名提示詞';
+                }
 
                 const tagsFromSection = extractSection(issue.body, '標籤');
                 const categoryFromSection = extractSection(issue.body, '分類');
@@ -71,8 +74,8 @@ async function fetchPrompts() {
                 return {
                     ...issue,
 
-                    // ✅ 卡片要顯示的標題：優先用表單欄位「標題」，找不到才 fallback 用 issue.title
-                    displayTitle: titleFromSection ? titleFromSection.trim() : issue.title,
+                    // ✅ 卡片要顯示的標題：直接使用從 issue.title 解析出來的結果
+                    displayTitle: displayTitle,
 
                     promptText: extractSection(issue.body, '提示詞內容'),
                     notes: extractSection(issue.body, '使用說明'),

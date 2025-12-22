@@ -7,26 +7,24 @@ on:
 jobs:
   rename:
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.title, '[新投稿]')
     permissions:
       issues: write
     steps:
-      - name: Extract title from body
-        id: extract
-        env:
-          ISSUE_BODY: ${{ github.event.issue.body }}
-        run: |
-          echo "Extracting title from body..."
-          TITLE=$(echo "$ISSUE_BODY" | sed -n '/### 標題/,/###/p' | grep -v '###' | grep -v '^[[:space:]]*$' | head -n 1 | xargs)
-          echo "Extracted: $TITLE"
-          if [ -n "$TITLE" ] && [ "$TITLE" != "_No response_" ]; then
-            echo "extracted_title=$TITLE" >> $GITHUB_OUTPUT
-          fi
-
       - name: Update Issue Title
-        if: steps.extract.outputs.extracted_title != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NEW_VAL: ${{ steps.extract.outputs.extracted_title }}
+          OLD_TITLE: ${{ github.event.issue.title }}
         run: |
-          gh issue edit ${{ github.event.issue.number }} --repo ${{ github.repository }} --title "[Prompt]: $NEW_VAL"
+          # 如果標題已經包含 [Prompt]: 或者是系統訊息則跳過
+          if [[ "$OLD_TITLE" == "[Prompt]:"* ]]; then
+            echo "Title already formatted. Skipping."
+            exit 0
+          fi
+          
+          # 清除預設文字並組合新標題
+          CLEAN_TITLE=$(echo "$OLD_TITLE" | sed 's/請在此輸入標題//g' | xargs)
+          if [ -z "$CLEAN_TITLE" ]; then
+            CLEAN_TITLE="未命名提示詞"
+          fi
+          
+          gh issue edit ${{ github.event.issue.number }} --repo ${{ github.repository }} --title "[Prompt]: $CLEAN_TITLE"
