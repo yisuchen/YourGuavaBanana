@@ -26,10 +26,14 @@ body:
     attributes:
       label: 分類
       options:
-        - 繪圖 (Image Generation)
-        - 寫作 (Writing)
-        - 程式碼 (Coding)
-        - 角色扮演 (Roleplay)
+        - 人像 (Portrait)
+        - 攝影 (Photography)
+        - 動漫 (Anime)
+        - 風景 (Landscape)
+        - 風格與特效 (Styles & Effects)
+        - 設計與圖標 (Design & Icons)
+        - 建築與空間 (Architecture)
+        - 流程圖與圖表 (Flowcharts & Diagrams)
         - 其他 (Others)
     validations:
       required: true
