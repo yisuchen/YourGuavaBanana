@@ -69,6 +69,7 @@ async function fetchPrompts() {
                     ...issue,
                     promptText: extractSection(issue.body, '提示詞內容'),
                     notes: extractSection(issue.body, '使用說明'),
+                    source: extractSection(issue.body, '來源 (Source)'),
                     customTags: customTags
                 };
             });
@@ -88,7 +89,9 @@ function extractSection(body, headingText) {
     let found = false;
 
     for (let i = 0; i < lines.length; i++) {
-        if (lines[i].trim().startsWith('### ' + headingText)) {
+        // Match both "### Heading" and "### Heading (English)" patterns
+        if (lines[i].trim().startsWith('### ' + headingText) || 
+            (headingText.includes('(') && lines[i].trim().startsWith('### ' + headingText.split(' (')[0]))) {
             found = true;
             continue;
         }
@@ -196,11 +199,21 @@ function renderCards(prompts) {
         const author = prompt.user ? prompt.user.login : 'unknown';
         const date = new Date(prompt.updated_at || Date.now()).toLocaleDateString();
         const contentToCopy = prompt.promptText || prompt.body;
+        
+        let metaHtml = `by ${escapeHtml(author)} on ${date}`;
+        if (prompt.source && prompt.source !== prompt.body) {
+             // Basic link detection for source
+             const sourceText = escapeHtml(prompt.source);
+             const sourceHtml = (sourceText.startsWith('http') || sourceText.startsWith('www')) 
+                ? `<a href="${sourceText}" target="_blank" rel="noopener noreferrer">Source</a>` 
+                : `Source: ${sourceText}`;
+             metaHtml += ` • ${sourceHtml}`;
+        }
 
         card.innerHTML = `
             <div class="card-header">
                 <h3 class="card-title">${escapeHtml(prompt.title)}</h3>
-                <div class="card-meta">by ${escapeHtml(author)} on ${date}</div>
+                <div class="card-meta">${metaHtml}</div>
             </div>
             <div class="card-tags">${tagsHtml}</div>
             <div class="card-content">${escapeHtml(contentToCopy)}</div>
