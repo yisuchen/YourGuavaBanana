@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BananaGuava - Prompts Vault</title>
-    <link rel="stylesheet" href="bananaGuava.css">
+    <link rel="stylesheet" href="bananaGuava.css" />
 </head>
+
 <body>
     <header>
         <div class="container">
@@ -17,13 +19,18 @@
     <main class="container">
         <section class="toolbar">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="搜尋標題、內容或標籤...">
+                <input type="text" id="searchInput" placeholder="搜尋標題、內容或標籤..." />
             </div>
+
             <div class="filters">
                 <select id="labelFilter">
                     <option value="">所有標籤</option>
                 </select>
-                <a href="https://github.com/yisu/BananaGuava/issues/new/choose" target="_blank" class="btn btn-primary" id="submitBtn">投稿新提示詞</a>
+
+                <a href="https://github.com/yisuchen/YourGuavaBanana/issues/new/choose" target="_blank" rel="noopener"
+                    class="btn btn-primary" id="submitBtn">
+                    投稿新提示詞
+                </a>
             </div>
         </section>
 
@@ -32,41 +39,51 @@
         </section>
 
         <section id="promptContainer" class="prompt-grid">
-            <!-- Cards will be rendered here -->
+            <!-- Cards will be rendered here by bananaGuava.js -->
         </section>
     </main>
 
     <!-- Modal for Detailed View -->
     <div id="promptModal" class="modal">
         <div class="modal-content">
-            <span class="close-button">&times;</span>
+            <span class="close-button" aria-label="Close">&times;</span>
+
             <div class="modal-body">
                 <div class="modal-left">
-                    <img id="modalImage" src="" alt="Preview">
+                    <img id="modalImage" src="" alt="Preview" />
                 </div>
+
                 <div class="modal-right">
                     <div class="modal-info">
                         <div class="info-group">
                             <label>分類</label>
                             <div id="modalCategory" class="info-value"></div>
                         </div>
+
                         <div class="info-group">
                             <div class="label-row">
                                 <label>提示詞</label>
-                                <button id="modalCopyBtn" class="btn btn-primary btn-sm">複製提示詞</button>
+                                <button id="modalCopyBtn" class="btn btn-primary btn-sm" type="button">
+                                    複製提示詞
+                                </button>
                             </div>
                             <div id="modalPrompt" class="prompt-display"></div>
                         </div>
+
                         <div id="modalTagsGroup" class="info-group">
                             <label>標籤</label>
                             <div id="modalTags" class="tag-list"></div>
                         </div>
+
                         <div class="modal-footer-actions">
-                            <a href="#" id="modalShareLink" target="_blank" class="btn btn-outline">分享你的香蕉拔辣 (投稿新提示詞)</a>
+                            <a href="#" id="modalShareLink" target="_blank" rel="noopener" class="btn btn-outline">
+                                分享你的香蕉拔辣 (投稿新提示詞)
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 
@@ -78,4 +95,5 @@
 
     <script src="bananaGuava.js"></script>
 </body>
+
 </html>
