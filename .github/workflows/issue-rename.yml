@@ -13,10 +13,12 @@ jobs:
     steps:
       - name: Extract title from body
         id: extract
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
-          # 尋找 ### 標題 之後第一個非空行的內容
-          BODY="${{ github.event.issue.body }}"
-          TITLE=$(echo "$BODY" | awk '/### 標題/{found=1;next} found && /[^[:space:]]/{print;exit}' | xargs)
+          echo "Extracting title from body..."
+          TITLE=$(echo "$ISSUE_BODY" | sed -n '/### 標題/,/###/p' | grep -v '###' | grep -v '^[[:space:]]*$' | head -n 1 | xargs)
+          echo "Extracted: $TITLE"
           if [ -n "$TITLE" ] && [ "$TITLE" != "_No response_" ]; then
             echo "extracted_title=$TITLE" >> $GITHUB_OUTPUT
           fi
@@ -25,6 +27,6 @@ jobs:
         if: steps.extract.outputs.extracted_title != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VAL: ${{ steps.extract.outputs.extracted_title }}
         run: |
-          NEW_TITLE="[Prompt]: ${{ steps.extract.outputs.extracted_title }}"
-          gh issue edit ${{ github.event.issue.number }} --title "$NEW_TITLE"
+          gh issue edit ${{ github.event.issue.number }} --title "[Prompt]: $NEW_VAL"
