@@ -204,11 +204,11 @@ select {
 }
 
 .card-body {
-    padding: 30px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    gap: 20px;
+    gap: 12px;
 }
 
 .card-category-tag {
@@ -223,11 +223,10 @@ select {
     letter-spacing: 0.8px;
     align-self: flex-start;
     border: 1px solid rgba(34, 197, 94, 0.2);
-    margin-bottom: -4px; /* Tighten relationship with title slightly, but keep gap elsewhere */
 }
 
 .card-title {
-    font-size: 1.4rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--text-color);
     margin: 0;
@@ -237,7 +236,7 @@ select {
 
 .hashtag {
     color: var(--accent-banana);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 500;
     margin-right: 12px;
     opacity: 0.7;
@@ -246,19 +245,19 @@ select {
 .card-tags {
     display: flex;
     flex-wrap: wrap;
-    margin-top: 8px; /* Extra breathing room from the content box */
+    margin-top: auto;
 }
 
 .card-content {
     background-color: rgba(15, 23, 42, 0.4);
-    padding: 20px;
-    border-radius: 16px;
+    padding: 16px;
+    border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.03);
     font-family: 'Fira Code', 'Courier New', monospace;
-    font-size: 0.9rem;
-    line-height: 1.8;
+    font-size: 0.85rem;
+    line-height: 1.6;
     white-space: pre-wrap;
-    margin: 10px 0; /* Add explicit vertical margin to avoid "sticking" */
+    margin: 0;
     flex-grow: 1;
     display: -webkit-box;
     -webkit-line-clamp: 3;
