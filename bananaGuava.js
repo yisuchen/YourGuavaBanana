@@ -235,6 +235,10 @@ function openModal(prompt) {
     const shareLink = document.getElementById('modalShareLink');
     shareLink.href = `https://github.com/${CONFIG.owner}/${CONFIG.repo}/issues/new/choose`;
 
+    // Edit Link
+    const editBtn = document.getElementById('modalEditBtn');
+    editBtn.href = prompt.html_url;
+
     // Copy button setup
     const copyBtn = document.getElementById('modalCopyBtn');
     // Remove old listeners by cloning
@@ -308,7 +312,8 @@ function renderCards(prompts) {
 
         const author = prompt.user ? prompt.user.login : 'unknown';
         const date = new Date(prompt.updated_at || Date.now()).toLocaleDateString();
-        const contentToDisplay = prompt.promptText !== null ? prompt.promptText : prompt.body;
+        const rawContent = prompt.promptText !== null ? prompt.promptText : prompt.body;
+        const contentToDisplay = rawContent.length > 100 ? rawContent.substring(0, 100) + '...' : rawContent;
 
         const imageHtml = prompt.imageUrl
             ? `<img src="${prompt.imageUrl}" alt="${escapeHtml(prompt.displayTitle || prompt.title)}" loading="lazy">`
