@@ -15,14 +15,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OLD_TITLE: ${{ github.event.issue.title }}
         run: |
-          # 如果標題已經包含 [Prompt]: 或者是系統訊息則跳過
+          # 如果標題已經包含 [Prompt]: 則跳過
           if [[ "$OLD_TITLE" == "[Prompt]:"* ]]; then
             echo "Title already formatted. Skipping."
             exit 0
           fi
           
-          # 清除預設文字並組合新標題
-          CLEAN_TITLE=$(echo "$OLD_TITLE" | sed 's/請在此輸入標題//g' | xargs)
+          # 清理標題字串
+          CLEAN_TITLE=$(echo "$OLD_TITLE" | xargs)
           if [ -z "$CLEAN_TITLE" ]; then
             CLEAN_TITLE="未命名提示詞"
           fi
