@@ -51,9 +51,19 @@ async function fetchPrompts() {
             .filter(issue => !issue.pull_request)
             .map(issue => {
                 const tagsFromSection = extractSection(issue.body, '標籤');
-                const customTags = (tagsFromSection && tagsFromSection !== issue.body)
-                    ? tagsFromSection.split(/[,，]/).map(t => t.trim()).filter(t => t)
-                    : [];
+                const categoryFromSection = extractSection(issue.body, '分類');
+                
+                let customTags = [];
+                
+                // Add category to tags if it exists and isn't the whole body (extraction failed)
+                if (categoryFromSection && categoryFromSection !== issue.body) {
+                    customTags.push(categoryFromSection.trim());
+                }
+
+                if (tagsFromSection && tagsFromSection !== issue.body) {
+                    const tags = tagsFromSection.split(/[,，]/).map(t => t.trim()).filter(t => t);
+                    customTags = [...customTags, ...tags];
+                }
 
                 return {
                     ...issue,

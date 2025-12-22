@@ -43,11 +43,6 @@ body:
       label: 標籤
       placeholder: 標籤 A, 標籤 B (用逗號分隔)
   - type: textarea
-    id: notes
-    attributes:
-      label: 使用說明
-      placeholder: 如何使用這個提示詞？
-  - type: textarea
     id: preview
     attributes:
       label: 預覽圖片
