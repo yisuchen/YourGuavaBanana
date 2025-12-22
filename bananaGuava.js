@@ -331,7 +331,6 @@ function renderCards(prompts) {
                 <div class="card-content">${escapeHtml(contentToDisplay)}</div>
                 <div class="card-meta">
                     <span style="color: var(--accent-guava)">●</span> ${escapeHtml(prompt.category)}
-                    <span style="margin-left: auto">by ${escapeHtml(author)}</span>
                 </div>
             </div>
         `;
