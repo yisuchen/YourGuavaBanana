@@ -389,9 +389,9 @@ select {
 
 .info-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
-    margin-bottom: -4px;
+    margin-bottom: 8px;
 }
 
 #modalCopyBtn {
