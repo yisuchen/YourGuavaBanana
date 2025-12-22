@@ -7,7 +7,7 @@ on:
 jobs:
   rename:
     runs-on: ubuntu-latest
-    if: startsWith(github.event.issue.title, '[Prompt]:')
+    if: contains(github.event.issue.title, '[新投稿]')
     permissions:
       issues: write
     steps:
