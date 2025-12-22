@@ -36,6 +36,40 @@
         </section>
     </main>
 
+    <!-- Modal for Detailed View -->
+    <div id="promptModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <div class="modal-body">
+                <div class="modal-left">
+                    <img id="modalImage" src="" alt="Preview">
+                </div>
+                <div class="modal-right">
+                    <div class="modal-info">
+                        <div class="info-group">
+                            <label>分類</label>
+                            <div id="modalCategory" class="info-value"></div>
+                        </div>
+                        <div class="info-group">
+                            <div class="label-row">
+                                <label>提示詞</label>
+                                <button id="modalCopyBtn" class="btn btn-primary btn-sm">複製提示詞</button>
+                            </div>
+                            <div id="modalPrompt" class="prompt-display"></div>
+                        </div>
+                        <div id="modalTagsGroup" class="info-group">
+                            <label>標籤</label>
+                            <div id="modalTags" class="tag-list"></div>
+                        </div>
+                        <div class="modal-footer-actions">
+                            <a href="#" id="modalShareLink" target="_blank" class="btn btn-outline">分享你的香蕉拔辣 (投稿新提示詞)</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer>
         <div class="container">
             <p>&copy; 2025 BananaGuava - Powered by GitHub Issues</p>

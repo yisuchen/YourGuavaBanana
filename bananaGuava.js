@@ -70,6 +70,8 @@ async function fetchPrompts() {
                     promptText: extractSection(issue.body, '提示詞內容'),
                     notes: extractSection(issue.body, '使用說明'),
                     source: extractSection(issue.body, '來源 (Source)'),
+                    category: categoryFromSection && categoryFromSection !== issue.body ? categoryFromSection.trim() : '未分類',
+                    imageUrl: extractImage(issue.body),
                     customTags: customTags
                 };
             });
@@ -80,6 +82,20 @@ async function fetchPrompts() {
         console.error('Error fetching prompts:', error);
         renderStats(`載入失敗: ${error.message}`);
     }
+}
+
+function extractImage(body) {
+    if (!body) return null;
+    
+    // Match Markdown image: ![alt](url)
+    const mdMatch = body.match(/!\[.*?\]\((.*?)\)/);
+    if (mdMatch) return mdMatch[1];
+    
+    // Match HTML image: <img src="url">
+    const htmlMatch = body.match(/<img.*?src=["'](.*?)["']/);
+    if (htmlMatch) return htmlMatch[1];
+    
+    return null;
 }
 
 function extractSection(body, headingText) {
@@ -137,6 +153,66 @@ function updateLabelFilter(prompts) {
 function setupEventListeners() {
     document.getElementById('searchInput').addEventListener('input', updateDisplay);
     document.getElementById('labelFilter').addEventListener('change', updateDisplay);
+    
+    // Modal events
+    const modal = document.getElementById('promptModal');
+    const closeBtn = document.querySelector('.close-button');
+    
+    closeBtn.onclick = () => closeModal();
+    window.onclick = (event) => {
+        if (event.target == modal) closeModal();
+    };
+
+    // Modal Image click to open original
+    document.getElementById('modalImage').onclick = function() {
+        if (this.src) window.open(this.src, '_blank');
+    };
+}
+
+function openModal(prompt) {
+    const modal = document.getElementById('promptModal');
+    const contentToCopy = prompt.promptText || prompt.body;
+    
+    // Set content
+    document.getElementById('modalImage').src = prompt.imageUrl || 'https://placehold.co/600x400/222/a0a0a0?text=No+Preview';
+    document.getElementById('modalCategory').textContent = prompt.category;
+    document.getElementById('modalPrompt').textContent = contentToCopy;
+    
+    // Tags
+    const tagsGroup = document.getElementById('modalTagsGroup');
+    const tagsContainer = document.getElementById('modalTags');
+    const githubLabels = prompt.labels.map(l => typeof l === 'string' ? l : l.name);
+    const allLabels = [...new Set([
+        ...githubLabels.filter(l => l !== CONFIG.label && l !== 'pending'),
+        ...(prompt.customTags || [])
+    ])];
+    
+    if (allLabels.length > 0) {
+        tagsGroup.style.display = 'block';
+        tagsContainer.innerHTML = allLabels.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
+    } else {
+        tagsGroup.style.display = 'none';
+    }
+    
+    // Share Link
+    const shareLink = document.getElementById('modalShareLink');
+    shareLink.href = `https://github.com/${CONFIG.owner}/${CONFIG.repo}/issues/new/choose`;
+
+    // Copy button setup
+    const copyBtn = document.getElementById('modalCopyBtn');
+    // Remove old listeners by cloning
+    const newCopyBtn = copyBtn.cloneNode(true);
+    copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
+    newCopyBtn.onclick = () => copyToClipboard(newCopyBtn, contentToCopy);
+
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevent scrolling
+}
+
+function closeModal() {
+    const modal = document.getElementById('promptModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
 }
 
 function updateDisplay() {
@@ -181,53 +257,39 @@ function renderCards(prompts) {
         const card = document.createElement('div');
         card.className = 'card';
 
-        // Combine GitHub labels and custom tags
+        // Labels processing
         const githubLabels = prompt.labels.map(l => typeof l === 'string' ? l : l.name);
         const allLabels = [
             ...githubLabels.filter(l => l !== CONFIG.label && l !== 'pending'),
             ...(prompt.customTags || [])
         ];
-
         const tagsHtml = [...new Set(allLabels)]
+            .slice(0, 3) // Only show first 3 on card
             .map(tag => `<span class="tag">${escapeHtml(tag)}</span>`)
             .join('');
 
-        const notesHtml = (prompt.notes && prompt.notes !== prompt.body)
-            ? `<details class="card-notes"><summary>使用說明</summary><div class="notes-content">${escapeHtml(prompt.notes)}</div></details>`
-            : '';
-
         const author = prompt.user ? prompt.user.login : 'unknown';
         const date = new Date(prompt.updated_at || Date.now()).toLocaleDateString();
-        const contentToCopy = prompt.promptText || prompt.body;
+        const contentToDisplay = prompt.promptText || prompt.body;
         
-        let metaHtml = `by ${escapeHtml(author)} on ${date}`;
-        if (prompt.source && prompt.source !== prompt.body) {
-             // Basic link detection for source
-             const sourceText = escapeHtml(prompt.source);
-             const sourceHtml = (sourceText.startsWith('http') || sourceText.startsWith('www')) 
-                ? `<a href="${sourceText}" target="_blank" rel="noopener noreferrer">Source</a>` 
-                : `Source: ${sourceText}`;
-             metaHtml += ` • ${sourceHtml}`;
-        }
+        const imageHtml = prompt.imageUrl 
+            ? `<img src="${prompt.imageUrl}" alt="${escapeHtml(prompt.title)}" loading="lazy">`
+            : `<div class="placeholder">No Preview</div>`;
 
         card.innerHTML = `
-            <div class="card-header">
-                <h3 class="card-title">${escapeHtml(prompt.title)}</h3>
-                <div class="card-meta">${metaHtml}</div>
-            </div>
-            <div class="card-tags">${tagsHtml}</div>
-            <div class="card-content">${escapeHtml(contentToCopy)}</div>
-            ${notesHtml}
-            <div class="card-actions">
-                <button class="btn btn-outline btn-sm copy-btn">複製提示詞</button>
-                <a href="${prompt.html_url}" target="_blank" class="btn btn-outline btn-sm">開啟 Issue</a>
+            <div class="card-image">${imageHtml}</div>
+            <div class="card-body">
+                <div class="card-header">
+                    <h3 class="card-title">${escapeHtml(prompt.title)}</h3>
+                    <div class="card-meta">分類: ${escapeHtml(prompt.category)}</div>
+                </div>
+                <div class="card-content">${escapeHtml(contentToDisplay)}</div>
+                <div class="card-tags">${tagsHtml}</div>
+                <div class="card-meta">by ${escapeHtml(author)} on ${date}</div>
             </div>
         `;
 
-        // Add event listener for copy button to avoid escaping issues in onclick
-        card.querySelector('.copy-btn').addEventListener('click', function () {
-            copyToClipboard(this, contentToCopy);
-        });
+        card.addEventListener('click', () => openModal(prompt));
 
         container.appendChild(card);
     });
