@@ -387,11 +387,24 @@ select {
     color: #000;
 }
 
+.info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: -4px;
+}
+
+.btn-sm {
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    border-radius: 8px;
+}
+
 .prompt-display {
     background-color: rgba(15, 23, 42, 0.6);
     border: 1px solid var(--border-color);
     border-radius: 20px;
-    padding: 50px 28px 28px 28px;
+    padding: 24px;
     font-family: 'Fira Code', 'Courier New', monospace;
     font-size: 1rem;
     line-height: 1.8;
