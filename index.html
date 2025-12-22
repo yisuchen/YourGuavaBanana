@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BananaGuava - Prompts Vault</title>
+    <link rel="stylesheet" href="bananaGuava.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🍌 BananaGuava</h1>
+            <p>你的香蕉概念庫 - 蒐集與分享各種提示詞</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="toolbar">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜尋標題、內容或標籤...">
+            </div>
+            <div class="filters">
+                <select id="labelFilter">
+                    <option value="">所有標籤</option>
+                </select>
+                <a href="https://github.com/yisu/BananaGuava/issues/new/choose" target="_blank" class="btn btn-primary" id="submitBtn">投稿新提示詞</a>
+            </div>
+        </section>
+
+        <section id="stats" class="stats-bar">
+            正在載入提示詞...
+        </section>
+
+        <section id="promptContainer" class="prompt-grid">
+            <!-- Cards will be rendered here -->
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 BananaGuava - Powered by GitHub Issues</p>
+        </div>
+    </footer>
+
+    <script src="bananaGuava.js"></script>
+</body>
+</html>

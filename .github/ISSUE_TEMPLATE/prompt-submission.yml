@@ -1,0 +1,50 @@
+name: 提示詞投稿 (Prompt Submission)
+description: 投稿新的香蕉提示詞到概念庫
+title: "[Prompt]: "
+labels: ["pending"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感謝你的投稿！請填寫以下資訊。
+  - type: input
+    id: title
+    attributes:
+      label: 標題
+      placeholder: 例如：香蕉風格繪圖提示詞
+    validations:
+      required: true
+  - type: textarea
+    id: prompt
+    attributes:
+      label: 提示詞內容
+      placeholder: 在此輸入你的提示詞...
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: 分類
+      options:
+        - 繪圖 (Image Generation)
+        - 寫作 (Writing)
+        - 程式碼 (Coding)
+        - 角色扮演 (Roleplay)
+        - 其他 (Others)
+    validations:
+      required: true
+  - type: input
+    id: tags
+    attributes:
+      label: 標籤
+      placeholder: 標籤 A, 標籤 B (用逗號分隔)
+  - type: textarea
+    id: notes
+    attributes:
+      label: 使用說明
+      placeholder: 如何使用這個提示詞？
+  - type: textarea
+    id: preview
+    attributes:
+      label: 預覽圖片
+      placeholder: 如果有圖片，可以貼上網址或上傳。

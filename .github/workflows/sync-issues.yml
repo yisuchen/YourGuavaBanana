@@ -1,0 +1,30 @@
+name: Sync Issues to Data JSON
+
+on:
+  issues:
+    types: [opened, edited, deleted, labeled, unlabeled, reopened]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *' # Every hour
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch Issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue list --label "accepted" --state open --limit 100 --json title,body,labels,html_url,number > data.json
+
+      - name: Commit and Push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: sync issues to data.json" && git push)
