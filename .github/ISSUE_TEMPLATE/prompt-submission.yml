@@ -1,6 +1,5 @@
 name: 提示詞投稿 (Prompt Submission)
 description: 投稿新的香蕉提示詞到概念庫
-title: ""
 labels: ["pending"]
 body:
   - type: markdown
