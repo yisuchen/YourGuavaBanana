@@ -394,10 +394,26 @@ select {
     margin-bottom: -4px;
 }
 
-.btn-sm {
-    padding: 6px 14px;
-    font-size: 0.8rem;
-    border-radius: 8px;
+#modalCopyBtn {
+    background: rgba(251, 191, 36, 0.05);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    color: var(--accent-banana);
+    padding: 6px 16px;
+    font-weight: 700;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#modalCopyBtn:hover {
+    background: rgba(251, 191, 36, 0.15);
+    border-color: var(--accent-banana);
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
+    transform: translateY(-1px);
+}
+
+#modalCopyBtn.copied {
+    background: var(--accent-guava);
+    border-color: var(--accent-guava);
+    color: white;
 }
 
 .prompt-display {

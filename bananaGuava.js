@@ -353,12 +353,12 @@ function escapeHtml(unsafe) {
 
 function copyToClipboard(btn, text) {
     navigator.clipboard.writeText(text).then(() => {
-        const originalText = btn.textContent;
-        btn.textContent = '已複製！';
-        btn.classList.add('btn-primary');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✅ 已複製';
+        btn.classList.add('copied');
         setTimeout(() => {
-            btn.textContent = originalText;
-            btn.classList.remove('btn-primary');
+            btn.innerHTML = originalText;
+            btn.classList.remove('copied');
         }, 2000);
     }).catch(err => {
         console.error('Copy failed:', err);
