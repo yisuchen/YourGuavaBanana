@@ -122,16 +122,17 @@ function extractMetadata() {
     state.categories = new Set();
     state.tags = new Set();
 
+    // First pass: collect all categories
     state.allPrompts.forEach(p => {
-        // Categories
         if (p.category) {
             state.categories.add(p.category);
         }
+    });
 
-        // Tags
+    // Second pass: collect tags that are not categories to keep them distinct
+    state.allPrompts.forEach(p => {
         p.computedTags.forEach(t => {
-            // Exclude category names from tags to keep them distinct
-            if (t !== p.category) {
+            if (!state.categories.has(t)) {
                 state.tags.add(t);
             }
         });
@@ -334,9 +335,9 @@ function renderCards(prompts) {
         const card = document.createElement('div');
         card.className = 'card';
 
-        // Tags to show on card (exclude category)
+        // Tags to show on card (exclude all categories)
         const displayTags = prompt.computedTags
-            .filter(tag => tag !== prompt.category)
+            .filter(tag => !state.categories.has(tag))
             .slice(0, 3); // Max 3 tags
 
         const tagsHtml = displayTags
@@ -483,8 +484,8 @@ function openModal(prompt) {
     const tagsGroup = document.getElementById('modalTagsGroup');
     const tagsContainer = document.getElementById('modalTags');
     
-    // Use computed tags but exclude current category
-    const displayTags = prompt.computedTags.filter(t => t !== prompt.category);
+    // Use computed tags but exclude all categories
+    const displayTags = prompt.computedTags.filter(t => !state.categories.has(t));
 
     if (displayTags.length > 0) {
         tagsGroup.style.display = 'block';
