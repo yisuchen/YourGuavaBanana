@@ -456,7 +456,36 @@ function openModal(prompt) {
     const modal = document.getElementById('promptModal');
     const contentToCopy = prompt.promptText !== null ? prompt.promptText : prompt.body;
 
-    document.getElementById('modalImage').src = prompt.imageUrl || 'https://placehold.co/600x400/222/a0a0a0?text=No+Preview';
+    const modalImage = document.getElementById('modalImage');
+    
+    // 1. Reset to Loading state immediately
+    modalImage.src = 'https://placehold.co/800x600/1e293b/94a3b8?text=Loading...';
+    modalImage.style.cursor = 'wait';
+    modalImage.title = '載入中...';
+    modalImage.onclick = null;
+
+    if (prompt.imageUrl) {
+        // Optimized for modal view
+        const optimizedUrl = `https://wsrv.nl/?url=${encodeURIComponent(prompt.imageUrl)}&w=800&q=85&output=webp`;
+        
+        // 2. Preload image
+        const img = new Image();
+        img.onload = () => {
+            // Only update if the modal is still open and showing the same prompt (simple check)
+            // Ideally we'd track a request ID, but this is usually sufficient for single-modal apps
+            if (document.getElementById('promptModal').style.display === 'block') {
+                modalImage.src = optimizedUrl;
+                modalImage.style.cursor = 'zoom-in';
+                modalImage.title = '點擊查看原圖';
+                modalImage.onclick = () => window.open(prompt.imageUrl, '_blank');
+            }
+        };
+        img.src = optimizedUrl;
+    } else {
+        modalImage.src = 'https://placehold.co/600x400/222/a0a0a0?text=No+Preview';
+        modalImage.style.cursor = 'default';
+        modalImage.title = '';
+    }
     document.getElementById('modalCategory').textContent = prompt.category;
     document.getElementById('modalPrompt').textContent = contentToCopy;
 
