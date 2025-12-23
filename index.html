@@ -20,11 +20,11 @@
     <main class="container">
         <section class="toolbar">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="搜尋標題、內容或標籤..." />
+                <input type="text" id="searchInput" placeholder="搜尋標題、內容..." />
             </div>
 
             <div class="filters">
-                <select id="labelFilter">
+                <select id="tagFilter">
                     <option value="">所有標籤</option>
                 </select>
 
@@ -35,12 +35,20 @@
             </div>
         </section>
 
+        <section id="categoryFilters" class="category-filters">
+            <!-- Category badges will be rendered here -->
+        </section>
+
         <section id="stats" class="stats-bar">
             正在載入提示詞...
         </section>
 
         <section id="promptContainer" class="prompt-grid">
             <!-- Cards will be rendered here by bananaGuava.js -->
+        </section>
+
+        <section id="pagination" class="pagination-container">
+            <!-- Pagination will be rendered here -->
         </section>
     </main>
 
