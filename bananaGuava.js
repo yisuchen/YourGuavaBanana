@@ -346,10 +346,17 @@ function renderCards(prompts) {
         const rawContent = prompt.promptText !== null ? prompt.promptText : prompt.body;
         const contentToDisplay = rawContent.length > 100 ? rawContent.substring(0, 100) + '...' : rawContent;
 
-        // Image optimization: loading="lazy" and decoding="async"
-        const imageHtml = prompt.imageUrl
-            ? `<img src="${prompt.imageUrl}" alt="${escapeHtml(prompt.displayTitle)}" loading="lazy" decoding="async">`
-            : `<div class="placeholder">No Preview</div>`;
+        // Image optimization: Use wsrv.nl for on-the-fly resizing and webp conversion
+        let imageHtml = '<div class="placeholder">No Preview</div>';
+        
+        if (prompt.imageUrl) {
+            // Encode the original URL for the proxy service
+            // w=400: Resize width to 400px (sufficient for cards)
+            // q=80: Quality 80%
+            // output=webp: Convert to WebP for better compression
+            const optimizedUrl = `https://wsrv.nl/?url=${encodeURIComponent(prompt.imageUrl)}&w=400&q=80&output=webp`;
+            imageHtml = `<img src="${optimizedUrl}" alt="${escapeHtml(prompt.displayTitle)}" loading="lazy" decoding="async">`;
+        }
 
         card.innerHTML = `
             <div class="card-image">${imageHtml}</div>
