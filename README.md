@@ -1,3 +1,6 @@
+# 這是向 https://github.com/mukiwu/prompts-vault 致敬的專案
+做為學習用途, 主要在嘗試重現, 一步步瞭解實作細節與設計理念。
+
 # BananaGuava 🍌
 
 這是蒐集或建立你的香蕉概念庫的專案。
