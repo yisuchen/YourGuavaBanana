@@ -12,19 +12,39 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: read
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Fetch Issues
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue list --label "accepted" --state open --limit 100 --json title,body,labels,url,number > data.json
+          set -euxo pipefail
+          gh issue list --repo "${{ github.repository }}" --label "accepted" --state open --limit 100 \
+            --json title,body,labels,url,number > data.json
+          ls -la data.json
 
       - name: Commit and Push
         run: |
+          set -euxo pipefail
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+
+          echo "== git status =="
+          git status --porcelain
+
           git add data.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: sync issues to data.json" && git push)
+
+          echo "== staged diff =="
+          git diff --staged --name-only
+          git diff --staged --quiet || git commit -m "chore: sync issues to data.json"
+
+          echo "== pushing to =="
+          git remote -v
+          git branch --show-current
+          git push
