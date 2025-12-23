@@ -20,7 +20,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue list --label "accepted" --state open --limit 100 --json title,body,labels,html_url,number > data.json
+          gh issue list --label "accepted" --state open --limit 100 --json title,body,labels,url,number > data.json
 
       - name: Commit and Push
         run: |
