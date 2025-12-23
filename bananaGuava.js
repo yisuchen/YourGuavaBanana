@@ -18,13 +18,18 @@ let state = {
     },
     pagination: {
         currentPage: 1,
-        itemsPerPage: 12
+        itemsPerPage: 24
     }
 };
 
 async function init() {
     setupEventListeners();
     updateSubmitButton();
+    // Sync dropdown with default state
+    const itemsPerPageSelect = document.getElementById('itemsPerPage');
+    if (itemsPerPageSelect) {
+        itemsPerPageSelect.value = state.pagination.itemsPerPage;
+    }
     await fetchPrompts();
 }
 
@@ -171,17 +176,23 @@ function applyFilters() {
     // Reset to page 1 when filters change
     state.pagination.currentPage = 1;
     
-    renderStats();
     renderPage();
 }
 
-function renderStats() {
-    const total = state.filteredPrompts.length;
-    const statsEl = document.getElementById('stats');
+function renderStats(start, end, total) {
+    const statsEl = document.getElementById('statsText');
+    if (!statsEl) return;
+    
+    // Check if first argument is a string (error message)
+    if (typeof start === 'string') {
+        statsEl.textContent = start;
+        return;
+    }
+    
     if (total === 0) {
         statsEl.textContent = '找不到符合條件的提示詞';
     } else {
-        statsEl.textContent = `顯示 ${total} 筆提示詞`;
+        statsEl.textContent = `顯示第 ${start} - ${end} 筆，共 ${total} 筆`;
     }
 }
 
@@ -189,6 +200,13 @@ function renderPage() {
     const { currentPage, itemsPerPage } = state.pagination;
     const totalItems = state.filteredPrompts.length;
     
+    if (totalItems === 0) {
+        renderCards([]);
+        renderPagination(0);
+        renderStats(0, 0, 0);
+        return;
+    }
+
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
     
@@ -196,11 +214,7 @@ function renderPage() {
     
     renderCards(promptsToShow);
     renderPagination(totalItems);
-    
-    // Scroll to top of grid on page change if not initial load
-    if (document.getElementById('promptContainer').innerHTML !== '') {
-         // Optional: smooth scroll
-    }
+    renderStats(startIndex + 1, endIndex, totalItems);
 }
 
 function renderCategoryFilters() {
@@ -258,13 +272,12 @@ function renderPagination(totalItems) {
     // Previous Button
     const prevBtn = document.createElement('button');
     prevBtn.className = 'page-btn';
-    prevBtn.innerHTML = '&lsaquo;'; // <
+    prevBtn.innerHTML = '<span>&lsaquo;</span> 上一頁';
     prevBtn.disabled = state.pagination.currentPage === 1;
     prevBtn.onclick = () => changePage(state.pagination.currentPage - 1);
     container.appendChild(prevBtn);
 
-    // Page Numbers logic (show simple range for now)
-    // For better UX with many pages, we might want ellipsis, but let's keep it simple first
+    // Page Numbers logic
     let startPage = Math.max(1, state.pagination.currentPage - 2);
     let endPage = Math.min(totalPages, startPage + 4);
     
@@ -299,7 +312,7 @@ function renderPagination(totalItems) {
     // Next Button
     const nextBtn = document.createElement('button');
     nextBtn.className = 'page-btn';
-    nextBtn.innerHTML = '&rsaquo;'; // >
+    nextBtn.innerHTML = '下一頁 <span>&rsaquo;</span>';
     nextBtn.disabled = state.pagination.currentPage === totalPages;
     nextBtn.onclick = () => changePage(state.pagination.currentPage + 1);
     container.appendChild(nextBtn);
@@ -434,6 +447,12 @@ function setupEventListeners() {
     document.getElementById('tagFilter').addEventListener('change', (e) => {
         state.filters.tag = e.target.value;
         applyFilters();
+    });
+
+    document.getElementById('itemsPerPage').addEventListener('change', (e) => {
+        state.pagination.itemsPerPage = parseInt(e.target.value);
+        state.pagination.currentPage = 1; // Reset to first page
+        renderPage();
     });
 
     // Modal events

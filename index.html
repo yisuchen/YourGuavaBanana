@@ -49,7 +49,16 @@
         </section>
 
         <section id="stats" class="stats-bar">
-            正在載入提示詞...
+            <span id="statsText">正在載入提示詞...</span>
+            <div class="items-per-page-control">
+                <label for="itemsPerPage">每頁顯示：</label>
+                <select id="itemsPerPage">
+                    <option value="12">12</option>
+                    <option value="24" selected>24</option>
+                    <option value="48">48</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
         </section>
 
         <section id="promptContainer" class="prompt-grid">

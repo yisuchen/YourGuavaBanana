@@ -188,6 +188,23 @@ select {
     font-size: 0.9rem;
     color: var(--text-muted);
     font-weight: 500;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.items-per-page-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.items-per-page-control select {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    background-color: rgba(15, 23, 42, 0.6);
 }
 
 .prompt-grid {
@@ -575,7 +592,9 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
+    min-width: 40px;
+    width: auto;
+    padding: 0 15px;
     height: 40px;
     border-radius: 10px;
     background: rgba(30, 41, 59, 0.6);
@@ -584,6 +603,7 @@ footer {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
 .page-btn:hover:not(:disabled) {
@@ -601,6 +621,21 @@ footer {
 .page-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.page-btn span {
+    font-size: 1.2rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+}
+
+.page-btn span:first-child {
+    margin-right: 4px;
+}
+
+.page-btn span:last-child {
+    margin-left: 4px;
 }
 
 .page-dots {
