@@ -928,11 +928,19 @@ function openModal(prompt) {
             let inputEl;
             
             // Check if we have predefined options
-            // Try normalized key first, then rawKey lowercased
             let options = state.variables[key];
             if (!options) {
-                 // Try simple lowercase if the underscore normalization failed
+                 // Try simple lowercase
                  options = state.variables[rawKey.toLowerCase()];
+            }
+
+            // Fallback: If 'text_1' or 'text_top' is not found, try 'text'
+            if (!options) {
+                const parts = key.split('_');
+                if (parts.length > 1) {
+                    const baseKey = parts.slice(0, -1).join('_');
+                    options = state.variables[baseKey];
+                }
             }
 
             if (options && Array.isArray(options) && options.length > 0) {
