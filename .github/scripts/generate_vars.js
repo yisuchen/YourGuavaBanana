@@ -48,9 +48,7 @@ function main() {
  * Adjust the header matching based on exact label in ISSUE_TEMPLATE.
  */
 function extractVariablesSection(body) {
-  // The label in prompt-submission.yml is "Variables (key=value)"
-  // GitHub Issue Forms usually generate markdown headers like "### Variables (key=value)"
-  const header = '### Variables (key=value)';
+  // More robust header matching: matches "### Variables", "Variables (key=value)", "Variables:", etc.
   const lines = body.split('\n');
   
   let capture = false;
@@ -58,14 +56,19 @@ function extractVariablesSection(body) {
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed.startsWith(header)) {
+    
+    // Check if line starts with something that looks like a Variables header
+    // Regexp matches "Variables" with optional ### prefix and optional suffix like (key=value) or :
+    if (/^(###\s*)?Variables(\s*\(.*\))?:?$/i.test(trimmed)) {
       capture = true;
       continue;
     }
-    // Stop at the next header (starts with ###)
+    
+    // Stop at the next Markdown header (starts with ###)
     if (capture && trimmed.startsWith('### ')) {
       break;
     }
+    
     if (capture) {
       extractedLines.push(line);
     }
