@@ -1019,7 +1019,7 @@ function openModal(prompt) {
     shareLink.href = `https://github.com/${CONFIG.owner}/${CONFIG.repo}/issues/new/choose`;
 
     const editBtn = document.getElementById('modalEditBtn');
-    editBtn.href = prompt.html_url;
+    editBtn.href = prompt.url;
 
     // Copy Button Logic
     const copyBtn = document.getElementById('modalCopyBtn');
