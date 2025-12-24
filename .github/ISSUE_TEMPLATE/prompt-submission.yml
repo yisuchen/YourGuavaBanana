@@ -40,6 +40,16 @@ body:
       label: 標籤
       placeholder: 標籤 A, 標籤 B (用逗號分隔)
   - type: textarea
+    id: variables
+    attributes:
+      label: Variables (key=value)
+      description: 提供此 prompt 相關變數候選值，會被全站彙整成選單（accepted 才會納入）。格式：key = value1, value2
+      placeholder: |
+        area = 台北, 中和, 土城
+        role: 工程師, 英文老師
+    validations:
+      required: false
+  - type: textarea
     id: preview
     attributes:
       label: 預覽圖片

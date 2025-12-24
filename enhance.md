@@ -60,7 +60,7 @@
 ### 2.2 格式（支援多組）
 一行一組 key/value，key 與 value 以 `=` 或 `:` 分隔；value 以 `,` 分隔 options：
 
-rea = 台北, 中和, 土城
+area = 台北, 中和, 土城
 role: 工程師, 英文老師, 建築師
 lang = 中文, English, 日本語
 

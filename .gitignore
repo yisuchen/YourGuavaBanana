@@ -35,3 +35,4 @@ temp/
 .env.test.local
 .env.production.local
 .GEMINI/
+worker.js

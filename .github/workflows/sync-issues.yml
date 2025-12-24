@@ -20,6 +20,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Fetch Issues
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -28,6 +33,8 @@ jobs:
           gh issue list --repo "${{ github.repository }}" --label "accepted" --state open --limit 100 \
             --json title,body,labels,url,number > data.json
           ls -la data.json
+          node .github/scripts/generate_vars.js
+          ls -la variables.json
 
       - name: Commit and Push
         run: |
@@ -38,7 +45,7 @@ jobs:
           echo "== git status =="
           git status --porcelain
 
-          git add data.json
+          git add data.json variables.json
 
           echo "== staged diff =="
           git diff --staged --name-only

@@ -106,6 +106,14 @@
                         <textarea id="formPrompt" required rows="5" placeholder="請貼上您的提示詞或圖片..."
                             style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white; font-family: monospace;"></textarea>
                     </div>
+
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">變數設定 (Variables)</label>
+                        <p style="font-size: 0.8em; color: var(--text-muted); margin-bottom: 8px;">選填，可設定提示詞中的變數候選值 (例如: area = 台北, 台中)</p>
+                        <div id="varsBuilderContainer" style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px;"></div>
+                        <button type="button" id="addVarBtn" class="btn btn-sm btn-outline" style="width: 100%; border-style: dashed;">+ 新增變數</button>
+                    </div>
+
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                         <div class="form-group">
                             <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">分類</label>
@@ -141,9 +149,15 @@
                         <textarea id="formSource" rows="1" placeholder="可選填，例如：@yisuchen 或 原始網址"
                             style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white;"></textarea>
                     </div>
-                    <button type="submit" id="submitAnonBtn" class="btn btn-guava" style="width: 100%;">
-                        🚀 送出投稿
-                    </button>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                         <button type="button" id="copyAndGoGithubBtn" class="btn btn-banana" style="flex: 1;">
+                            📋 複製並前往 GitHub
+                        </button>
+                        <button type="submit" id="submitAnonBtn" class="btn btn-guava" style="flex: 1;">
+                            🚀 匿名投稿
+                        </button>
+                    </div>
                     <p id="submitStatus" style="margin-top: 15px; text-align: center; display: none;"></p>
                 </form>
             </div>
@@ -164,6 +178,11 @@
                     <div class="modal-info">
                         <div class="info-group">
                             <div id="modalCategory" class="card-category-tag"></div>
+                        </div>
+
+                        <div id="modalVariablesGroup" class="info-group" style="display: none; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                            <label style="color: var(--accent-banana); margin-bottom: 10px; display: block;">變數替換 (Variables)</label>
+                            <div id="modalVariablesList" style="display: flex; flex-direction: column; gap: 10px;"></div>
                         </div>
 
                         <div class="info-group">

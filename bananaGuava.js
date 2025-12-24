@@ -12,6 +12,7 @@ let state = {
     filteredPrompts: [],
     categories: new Set(),
     tags: new Set(),
+    variables: {},
     filters: {
         search: '',
         category: 'All', // 'All' or specific category name
@@ -49,6 +50,17 @@ async function fetchPrompts() {
             }
         } catch (e) {
             console.log('data.json not found, falling back to API');
+        }
+
+        // Try local variables.json
+        try {
+            const varsResponse = await fetch('variables.json');
+            if (varsResponse.ok) {
+                state.variables = await varsResponse.json();
+                console.log('Loaded from variables.json');
+            }
+        } catch (e) {
+            console.log('variables.json not found or failed to load');
         }
 
         // Fallback to API if data not loaded
@@ -556,6 +568,19 @@ function setupEventListeners() {
         imagePreview.src = '';
     };
 
+    // Variables Builder
+    const varsContainer = document.getElementById('varsBuilderContainer');
+    const addVarBtn = document.getElementById('addVarBtn');
+    if (addVarBtn) {
+        addVarBtn.onclick = () => addVariableRow(varsContainer);
+    }
+    
+    // Copy & Go GitHub
+    const copyGoBtn = document.getElementById('copyAndGoGithubBtn');
+    if (copyGoBtn) {
+        copyGoBtn.onclick = () => handleGithubHandover();
+    }
+
     // Paste Image Support
     document.getElementById('formPrompt').addEventListener('paste', (e) => {
         const items = (e.clipboardData || e.originalEvent.clipboardData).items;
@@ -615,6 +640,7 @@ async function handleAnonSubmission() {
         category: category,
         tags: document.getElementById('formTags').value,
         source: document.getElementById('formSource').value,
+        variables: collectVariables(),
         image: null
     };
 
@@ -705,7 +731,8 @@ function fileToBase64(file) {
 
 function openModal(prompt) {
     const modal = document.getElementById('promptModal');
-    const contentToCopy = prompt.promptText !== null ? prompt.promptText : prompt.body;
+    const rawContent = prompt.promptText !== null ? prompt.promptText : prompt.body;
+    let contentToCopy = rawContent; // Base content
 
     const modalImage = document.getElementById('modalImage');
     
@@ -723,7 +750,6 @@ function openModal(prompt) {
         const img = new Image();
         img.onload = () => {
             // Only update if the modal is still open and showing the same prompt (simple check)
-            // Ideally we'd track a request ID, but this is usually sufficient for single-modal apps
             if (document.getElementById('promptModal').style.display === 'block') {
                 modalImage.src = optimizedUrl;
                 modalImage.style.cursor = 'zoom-in';
@@ -739,6 +765,102 @@ function openModal(prompt) {
     }
     document.getElementById('modalCategory').textContent = prompt.category;
     document.getElementById('modalPrompt').textContent = contentToCopy;
+
+    // --- Variables Handling ---
+    const varsGroup = document.getElementById('modalVariablesGroup');
+    const varsList = document.getElementById('modalVariablesList');
+    varsGroup.style.display = 'none';
+    varsList.innerHTML = '';
+    
+    // Regex to find {{key}}
+    // Support spaces inside braces: {{ key }}
+    const regex = /{{(.*?)}}/g;
+    const matches = [...contentToCopy.matchAll(regex)];
+    
+    // Extract unique keys, preserving order
+    const uniqueKeys = [];
+    const seenKeys = new Set();
+    matches.forEach(m => {
+        const rawKey = m[1].trim();
+        if (!seenKeys.has(rawKey)) {
+            seenKeys.add(rawKey);
+            uniqueKeys.push(rawKey);
+        }
+    });
+
+    // Store references to inputs for copy logic
+    const variableInputs = {}; 
+
+    if (uniqueKeys.length > 0) {
+        varsGroup.style.display = 'block';
+        
+        uniqueKeys.forEach(rawKey => {
+            const key = rawKey.toLowerCase().replace(/\s+/g, '_'); // Normalize for lookup in variables.json
+            // We use rawKey for display and replacement
+            
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.alignItems = 'center';
+            row.style.gap = '10px';
+            
+            const label = document.createElement('label');
+            label.textContent = rawKey;
+            label.style.minWidth = '80px';
+            label.style.color = '#cbd5e1';
+            label.style.fontSize = '0.9em';
+            
+            let inputEl;
+            
+            // Check if we have predefined options
+            // Try normalized key first, then rawKey lowercased
+            let options = state.variables[key];
+            if (!options) {
+                 // Try simple lowercase if the underscore normalization failed
+                 options = state.variables[rawKey.toLowerCase()];
+            }
+
+            if (options && Array.isArray(options) && options.length > 0) {
+                inputEl = document.createElement('select');
+                inputEl.className = 'var-input'; // Add class for styling if needed
+                inputEl.style.flex = '1';
+                inputEl.style.padding = '8px';
+                inputEl.style.borderRadius = '4px';
+                inputEl.style.border = '1px solid #475569';
+                inputEl.style.background = '#1e293b';
+                inputEl.style.color = 'white';
+                
+                // Add default empty option
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = "";
+                defaultOpt.textContent = `(選擇 ${rawKey})`;
+                inputEl.appendChild(defaultOpt);
+                
+                options.forEach(optVal => {
+                    const opt = document.createElement('option');
+                    opt.value = optVal;
+                    opt.textContent = optVal;
+                    inputEl.appendChild(opt);
+                });
+            } else {
+                inputEl = document.createElement('input');
+                inputEl.type = 'text';
+                inputEl.className = 'var-input';
+                inputEl.style.flex = '1';
+                inputEl.style.padding = '8px';
+                inputEl.style.borderRadius = '4px';
+                inputEl.style.border = '1px solid #475569';
+                inputEl.style.background = '#1e293b';
+                inputEl.style.color = 'white';
+                inputEl.placeholder = `輸入 ${rawKey}...`;
+            }
+            
+            variableInputs[rawKey] = inputEl;
+            
+            row.appendChild(label);
+            row.appendChild(inputEl);
+            varsList.appendChild(row);
+        });
+    }
 
     // Notes
     const notesGroup = document.getElementById('modalNotesGroup');
@@ -783,14 +905,41 @@ function openModal(prompt) {
     const editBtn = document.getElementById('modalEditBtn');
     editBtn.href = prompt.html_url;
 
-    // Copy Button
+    // Copy Button Logic
     const copyBtn = document.getElementById('modalCopyBtn');
     const newCopyBtn = copyBtn.cloneNode(true);
     copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
-    newCopyBtn.onclick = () => copyToClipboard(newCopyBtn, contentToCopy);
+
+    if (uniqueKeys.length > 0) {
+        newCopyBtn.innerHTML = '✨ 複製已替換提示詞';
+        newCopyBtn.classList.add('btn-primary'); // Make it stand out
+        
+        newCopyBtn.onclick = () => {
+            let finalPrompt = contentToCopy;
+            uniqueKeys.forEach(rawKey => {
+                const input = variableInputs[rawKey];
+                const value = input.value.trim();
+                if (value) {
+                    // Replace all occurrences of {{rawKey}} or {{ rawKey }}
+                    // We need a regex that matches the key with optional spaces
+                    const keyRegex = new RegExp(`{{\\s*${escapeRegExp(rawKey)}\\s*}}`, 'g');
+                    finalPrompt = finalPrompt.replace(keyRegex, value);
+                }
+            });
+            copyToClipboard(newCopyBtn, finalPrompt);
+        };
+    } else {
+        newCopyBtn.innerHTML = '📋 複製';
+        newCopyBtn.classList.remove('btn-primary');
+        newCopyBtn.onclick = () => copyToClipboard(newCopyBtn, contentToCopy);
+    }
 
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
+}
+
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function closeModal() {
@@ -810,6 +959,103 @@ function copyToClipboard(btn, text) {
         }, 2000);
     }).catch(err => {
         console.error('Copy failed:', err);
+    });
+}
+
+// --- Variables Builder Helpers ---
+
+function addVariableRow(container) {
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.gap = '5px';
+    
+    const keyInput = document.createElement('input');
+    keyInput.placeholder = '變數名 (如 area)';
+    keyInput.style.width = '30%';
+    keyInput.style.padding = '8px';
+    keyInput.style.background = '#1e293b';
+    keyInput.style.border = '1px solid #334155';
+    keyInput.style.color = 'white';
+    keyInput.style.borderRadius = '4px';
+    
+    const valInput = document.createElement('input');
+    valInput.placeholder = '選項 (以逗號分隔)';
+    valInput.style.flex = '1';
+    valInput.style.padding = '8px';
+    valInput.style.background = '#1e293b';
+    valInput.style.border = '1px solid #334155';
+    valInput.style.color = 'white';
+    valInput.style.borderRadius = '4px';
+    
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '✕';
+    delBtn.style.padding = '0 10px';
+    delBtn.style.background = '#ef4444';
+    delBtn.style.color = 'white';
+    delBtn.style.border = 'none';
+    delBtn.style.borderRadius = '4px';
+    delBtn.style.cursor = 'pointer';
+    delBtn.onclick = () => container.removeChild(row);
+    
+    row.appendChild(keyInput);
+    row.appendChild(valInput);
+    row.appendChild(delBtn);
+    container.appendChild(row);
+    
+    // Auto focus key
+    keyInput.focus();
+}
+
+function collectVariables() {
+    const container = document.getElementById('varsBuilderContainer');
+    if (!container) return "";
+    
+    const rows = container.children;
+    let result = [];
+    for (let row of rows) {
+        const inputs = row.getElementsByTagName('input');
+        if (inputs.length >= 2) {
+            const key = inputs[0].value.trim();
+            const vals = inputs[1].value.trim();
+            if (key) {
+                // Determine separator based on content? Default to =
+                result.push(`${key} = ${vals}`);
+            }
+        }
+    }
+    return result.join('\n');
+}
+
+function handleGithubHandover() {
+    const title = document.getElementById('formTitle').value;
+    const prompt = document.getElementById('formPrompt').value;
+    let category = document.getElementById('formCategorySelect').value;
+    const tags = document.getElementById('formTags').value;
+    const source = document.getElementById('formSource').value;
+    const variables = collectVariables();
+    
+    if (category === '其他') category = ''; // Leave blank if other
+
+    const params = new URLSearchParams();
+    params.append('template', 'prompt-submission.yml');
+    if (title) params.append('title', title);
+    if (prompt) params.append('prompt', prompt);
+    if (category) params.append('category', category);
+    if (tags) params.append('tags', tags);
+    if (source) params.append('source', source);
+    if (variables) params.append('variables', variables);
+    
+    const url = `https://github.com/${CONFIG.owner}/${CONFIG.repo}/issues/new?${params.toString()}`;
+    
+    // Copy content to clipboard as fallback/convenience
+    const allContent = `Title: ${title}\nPrompt: ${prompt}\nCategory: ${category}\nTags: ${tags}\nVariables:\n${variables}\nSource: ${source}`;
+    
+    navigator.clipboard.writeText(allContent).then(() => {
+        alert('內容已複製！正在前往 GitHub 投稿頁面...\n(注意：如果有圖片，請需手動上傳)');
+        window.open(url, '_blank');
+    }).catch(() => {
+        // Fallback if clipboard fails
+        window.open(url, '_blank');
     });
 }
 
