@@ -78,8 +78,9 @@
                 <p style="color: var(--text-muted); margin-bottom: 30px;">推薦使用 GitHub 投稿，您可以隨時修改內容</p>
                 <div style="display: flex; flex-direction: column; gap: 15px;">
                     <a href="https://github.com/yisuchen/YourGuavaBanana/issues/new/choose" target="_blank"
-                        class="btn btn-banana" style="width: 100%;">
-                        🐱 使用 GitHub 帳號投稿 (推薦)
+                        class="btn btn-primary" style="width: 100%;">
+                        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" width="20" height="20" style="filter: invert(1); margin-right: 8px;">
+                        使用 GitHub 帳號投稿 (推薦)
                     </a>
                     <button id="openAnonForm" class="btn btn-guava" style="width: 100%;">
                         👤 匿名快速投稿
@@ -101,10 +102,11 @@
                         <input type="text" id="formTitle" required placeholder="例如：Midjourney 寫實人像"
                             style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white;">
                     </div>
-                    <div class="form-group" style="margin-bottom: 15px;">
+                    <div class="form-group" style="margin-bottom: 15px; position: relative;">
                         <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">提示詞內容 *</label>
-                        <textarea id="formPrompt" required rows="5" placeholder="請貼上您的提示詞或圖片..."
+                        <textarea id="formPrompt" required rows="5" placeholder="請貼上您的提示詞內容。&#10;可以使用 {{變數}} 建立可替換欄位，例如：請幫我寫一篇關於 {{area}} 的旅遊介紹。&#10;並在下方「變數設定」區域新增變數及其選項。"
                             style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white; font-family: monospace;"></textarea>
+                        <div id="varSuggestions" class="suggestions-dropdown" style="display: none;"></div>
                     </div>
 
                     <div class="form-group" style="margin-bottom: 15px;">
@@ -151,9 +153,6 @@
                     </div>
                     
                     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                         <button type="button" id="copyAndGoGithubBtn" class="btn btn-banana" style="flex: 1;">
-                            📋 複製並前往 GitHub
-                        </button>
                         <button type="submit" id="submitAnonBtn" class="btn btn-guava" style="flex: 1;">
                             🚀 匿名投稿
                         </button>

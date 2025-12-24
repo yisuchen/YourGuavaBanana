@@ -468,7 +468,7 @@ function setupEventListeners() {
     
     // Main Prompt Detail Modal
     const modal = document.getElementById('promptModal');
-    const closeBtn = document.querySelector('.close-button');
+    const closeBtn = modal.querySelector('.close-button');
     closeBtn.onclick = () => closeModal();
 
     // Choice Modal
@@ -575,14 +575,130 @@ function setupEventListeners() {
         addVarBtn.onclick = () => addVariableRow(varsContainer);
     }
     
-    // Copy & Go GitHub
-    const copyGoBtn = document.getElementById('copyAndGoGithubBtn');
-    if (copyGoBtn) {
-        copyGoBtn.onclick = () => handleGithubHandover();
+    // Paste Image Support
+    const formPrompt = document.getElementById('formPrompt');
+    const suggestionsEl = document.getElementById('varSuggestions');
+    let selectedSuggestionIndex = -1;
+
+    formPrompt.addEventListener('input', (e) => {
+        const cursorSettings = getCursorXY(formPrompt, formPrompt.selectionStart);
+        const text = formPrompt.value;
+        const cursorPos = formPrompt.selectionStart;
+        
+        // Find if we are currently inside a {{ }} tag
+        const lastBraces = text.lastIndexOf('{{', cursorPos - 1);
+        const lastClosing = text.lastIndexOf('}}', cursorPos - 1);
+        
+        if (lastBraces !== -1 && lastBraces > lastClosing) {
+            const query = text.substring(lastBraces + 2, cursorPos).trim().toLowerCase();
+            showSuggestions(query, cursorSettings);
+        } else {
+            hideSuggestions();
+        }
+    });
+
+    formPrompt.addEventListener('keydown', (e) => {
+        if (suggestionsEl.style.display === 'block') {
+            const items = suggestionsEl.querySelectorAll('.suggestion-item');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedSuggestionIndex = (selectedSuggestionIndex + 1) % items.length;
+                updateActiveSuggestion(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedSuggestionIndex = (selectedSuggestionIndex - 1 + items.length) % items.length;
+                updateActiveSuggestion(items);
+            } else if (e.key === 'Enter' && selectedSuggestionIndex !== -1) {
+                e.preventDefault();
+                items[selectedSuggestionIndex].click();
+            } else if (e.key === 'Escape') {
+                hideSuggestions();
+            }
+        }
+    });
+
+    function showSuggestions(query, coords) {
+        const keys = Object.keys(state.variables || {});
+        const filtered = keys.filter(k => k.includes(query));
+        
+        if (filtered.length === 0 && query.length === 0) {
+            // Show all keys if query is empty
+            renderSuggestions(keys);
+        } else if (filtered.length > 0) {
+            renderSuggestions(filtered);
+        } else {
+            hideSuggestions();
+            return;
+        }
+
+        suggestionsEl.style.display = 'block';
+        // Position it near the cursor
+        suggestionsEl.style.left = `${coords.x}px`;
+        suggestionsEl.style.top = `${coords.y + 20}px`;
     }
 
-    // Paste Image Support
-    document.getElementById('formPrompt').addEventListener('paste', (e) => {
+    function renderSuggestions(list) {
+        suggestionsEl.innerHTML = '';
+        selectedSuggestionIndex = -1;
+        list.forEach((key, index) => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.textContent = key;
+            item.onclick = () => {
+                insertVariable(key);
+                hideSuggestions();
+            };
+            suggestionsEl.appendChild(item);
+        });
+    }
+
+    function updateActiveSuggestion(items) {
+        items.forEach((item, index) => {
+            if (index === selectedSuggestionIndex) {
+                item.classList.add('active');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
+    function hideSuggestions() {
+        suggestionsEl.style.display = 'none';
+        selectedSuggestionIndex = -1;
+    }
+
+    function insertVariable(key) {
+        const text = formPrompt.value;
+        const cursorPos = formPrompt.selectionStart;
+        const lastBraces = text.lastIndexOf('{{', cursorPos - 1);
+        
+        const before = text.substring(0, lastBraces);
+        const after = text.substring(cursorPos);
+        
+        // If the user already typed part of the closing braces or not
+        const hasClosing = after.trim().startsWith('}}');
+        const replacement = `{{${key}${hasClosing ? '' : '}}'}`;
+        
+        formPrompt.value = before + replacement + (hasClosing ? after.substring(after.indexOf('}}') + 2) : after);
+        
+        // Focus back and set cursor
+        formPrompt.focus();
+        const newPos = before.length + replacement.length;
+        formPrompt.setSelectionRange(newPos, newPos);
+    }
+
+    // Helper to get cursor coordinates in textarea
+    function getCursorXY(textarea, selectionStart) {
+        const { offsetLeft, offsetTop } = textarea;
+        // Simple approximation: position below the textarea's start
+        // Finding exact X/Y in a textarea is complex, so we'll show it 
+        // at a fixed but helpful relative position within the container.
+        return { x: 10, y: textarea.offsetTop + 30 };
+    }
+
+    formPrompt.addEventListener('paste', (e) => {
         const items = (e.clipboardData || e.originalEvent.clipboardData).items;
         for (const item of items) {
             if (item.type.indexOf('image') !== -1) {
@@ -1024,39 +1140,6 @@ function collectVariables() {
         }
     }
     return result.join('\n');
-}
-
-function handleGithubHandover() {
-    const title = document.getElementById('formTitle').value;
-    const prompt = document.getElementById('formPrompt').value;
-    let category = document.getElementById('formCategorySelect').value;
-    const tags = document.getElementById('formTags').value;
-    const source = document.getElementById('formSource').value;
-    const variables = collectVariables();
-    
-    if (category === '其他') category = ''; // Leave blank if other
-
-    const params = new URLSearchParams();
-    params.append('template', 'prompt-submission.yml');
-    if (title) params.append('title', title);
-    if (prompt) params.append('prompt', prompt);
-    if (category) params.append('category', category);
-    if (tags) params.append('tags', tags);
-    if (source) params.append('source', source);
-    if (variables) params.append('variables', variables);
-    
-    const url = `https://github.com/${CONFIG.owner}/${CONFIG.repo}/issues/new?${params.toString()}`;
-    
-    // Copy content to clipboard as fallback/convenience
-    const allContent = `Title: ${title}\nPrompt: ${prompt}\nCategory: ${category}\nTags: ${tags}\nVariables:\n${variables}\nSource: ${source}`;
-    
-    navigator.clipboard.writeText(allContent).then(() => {
-        alert('內容已複製！正在前往 GitHub 投稿頁面...\n(注意：如果有圖片，請需手動上傳)');
-        window.open(url, '_blank');
-    }).catch(() => {
-        // Fallback if clipboard fails
-        window.open(url, '_blank');
-    });
 }
 
 window.onload = init;
