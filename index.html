@@ -103,7 +103,7 @@
                     </div>
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">提示詞內容 *</label>
-                        <textarea id="formPrompt" required rows="5" placeholder="請貼上您的提示詞..."
+                        <textarea id="formPrompt" required rows="5" placeholder="請貼上您的提示詞或圖片..."
                             style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white; font-family: monospace;"></textarea>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
@@ -120,9 +120,25 @@
                                 style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white;">
                         </div>
                     </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">上傳預覽圖
+                            (選填)</label>
+                        <input type="file" id="formImageFile" accept="image/*"
+                            style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white; cursor: pointer;">
+                        <div id="formImagePreviewContainer"
+                            style="margin-top: 10px; display: none; text-align: center;">
+                            <p
+                                style="font-size: 0.8em; color: var(--text-muted); margin-bottom: 5px; text-align: left;">
+                                預覽：</p>
+                            <img id="formImagePreview" src="" alt="Image Preview"
+                                style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #334155;">
+                            <button type="button" id="removeImageBtn" class="btn btn-sm btn-outline"
+                                style="margin-top: 5px; width: 100%;">❌ 移除圖片</button>
+                        </div>
+                    </div>
                     <div class="form-group" style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">作者 / 來源</label>
-                        <textarea id="formNotes" rows="2" placeholder="可選填，例如：@yisuchen 或 原始網址"
+                        <textarea id="formSource" rows="1" placeholder="可選填，例如：@yisuchen 或 原始網址"
                             style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white;"></textarea>
                     </div>
                     <button type="submit" id="submitAnonBtn" class="btn btn-guava" style="width: 100%;">
@@ -166,7 +182,7 @@
                         </div>
 
                         <div id="modalSourceGroup" class="info-group" style="display: none;">
-                            <label>來源 (Source)</label>
+                            <label>作者 / 來源</label>
                             <div id="modalSource" class="info-value"></div>
                         </div>
 
