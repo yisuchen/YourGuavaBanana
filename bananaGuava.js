@@ -2,7 +2,8 @@ const CONFIG = {
     owner: 'yisuchen',
     repo: 'YourGuavaBanana',
     label: 'accepted',
-    per_page: 100
+    per_page: 100,
+    worker_url: 'https://banana-guava-api.skyyisu.workers.dev'
 };
 
 // Application State
@@ -24,20 +25,12 @@ let state = {
 
 async function init() {
     setupEventListeners();
-    updateSubmitButton();
     // Sync dropdown with default state
     const itemsPerPageSelect = document.getElementById('itemsPerPage');
     if (itemsPerPageSelect) {
         itemsPerPageSelect.value = state.pagination.itemsPerPage;
     }
     await fetchPrompts();
-}
-
-function updateSubmitButton() {
-    const submitBtn = document.getElementById('submitBtn');
-    if (submitBtn) {
-        submitBtn.href = `https://github.com/${CONFIG.owner}/${CONFIG.repo}/issues/new/choose`;
-    }
 }
 
 async function fetchPrompts() {
@@ -455,18 +448,148 @@ function setupEventListeners() {
         renderPage();
     });
 
-    // Modal events
+    // --- Modal events ---
+    
+    // Main Prompt Detail Modal
     const modal = document.getElementById('promptModal');
     const closeBtn = document.querySelector('.close-button');
-
     closeBtn.onclick = () => closeModal();
+
+    // Choice Modal
+    const choiceModal = document.getElementById('choiceModal');
+    const submitBtn = document.getElementById('submitBtn');
+    const closeChoice = document.getElementById('closeChoice');
+    const openAnonForm = document.getElementById('openAnonForm');
+
+    submitBtn.onclick = () => {
+        choiceModal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    };
+
+    closeChoice.onclick = () => {
+        choiceModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    };
+
+    // Anonymous Form Modal
+    const submitFormModal = document.getElementById('submitFormModal');
+    const closeSubmitForm = document.getElementById('closeSubmitForm');
+    const anonForm = document.getElementById('anonSubmissionForm');
+
+    openAnonForm.onclick = () => {
+        // Populate Categories
+        const select = document.getElementById('formCategorySelect');
+        // Keep the first default option
+        select.innerHTML = '<option value="">請選擇分類...</option>';
+        
+        const sortedCategories = Array.from(state.categories).sort();
+        sortedCategories.forEach(cat => {
+            if (cat !== 'All' && cat !== '全部') {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                select.appendChild(option);
+            }
+        });
+        
+        // Add "Other" option
+        const otherOption = document.createElement('option');
+        otherOption.value = "其他";
+        otherOption.textContent = "其他 (手動輸入)";
+        select.appendChild(otherOption);
+
+        choiceModal.style.display = 'none';
+        submitFormModal.style.display = 'block';
+    };
+
+    closeSubmitForm.onclick = () => {
+        submitFormModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    };
+
+    // Global click to close modals
     window.onclick = (event) => {
         if (event.target == modal) closeModal();
+        if (event.target == choiceModal) {
+            choiceModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        if (event.target == submitFormModal) {
+            submitFormModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    };
+
+    // Form Submission
+    anonForm.onsubmit = async (e) => {
+        e.preventDefault();
+        await handleAnonSubmission();
     };
 
     document.getElementById('modalImage').onclick = function () {
         if (this.src) window.open(this.src, '_blank');
     };
+}
+
+async function handleAnonSubmission() {
+    const submitBtn = document.getElementById('submitAnonBtn');
+    const statusEl = document.getElementById('submitStatus');
+    
+    // Handle Category: Use selected value, fallback to 'Uncategorized' if empty
+    let category = document.getElementById('formCategorySelect').value;
+    if (!category || category === '其他') {
+        // For simplicity in this version, "Other" or empty maps to a default string or could trigger an input
+        // If you want a text input for 'Other', we'd need more UI logic. 
+        // For now, let's default to "未分類" if empty, or "其他" if selected.
+        if (!category) category = '未分類';
+    }
+
+    const data = {
+        title: document.getElementById('formTitle').value,
+        prompt: document.getElementById('formPrompt').value,
+        category: category,
+        tags: document.getElementById('formTags').value,
+        notes: document.getElementById('formNotes').value // This is now Author/Source
+    };
+
+    // Disable button and show loading
+    submitBtn.disabled = true;
+    const originalBtnText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '⏳ 處理中...';
+    statusEl.style.display = 'block';
+    statusEl.style.color = 'var(--accent-banana)';
+    statusEl.textContent = '正在發送投稿，請稍候...';
+
+    try {
+        const response = await fetch(CONFIG.worker_url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            statusEl.style.color = 'var(--accent-guava)';
+            statusEl.textContent = '✅ 投稿成功！請等待審核，頁面將於 3 秒後關閉。';
+            document.getElementById('anonSubmissionForm').reset();
+            
+            setTimeout(() => {
+                document.getElementById('submitFormModal').style.display = 'none';
+                document.body.style.overflow = 'auto';
+                statusEl.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }, 3000);
+        } else {
+            throw new Error(result.error || '發送失敗');
+        }
+    } catch (error) {
+        statusEl.style.color = 'var(--accent-pink)';
+        statusEl.textContent = `❌ 錯誤: ${error.message}`;
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+    }
 }
 
 // --- Modal Functions (Largely same as before but using state object if needed) ---

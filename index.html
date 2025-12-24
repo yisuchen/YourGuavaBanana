@@ -37,10 +37,9 @@
                     <option value="">所有標籤</option>
                 </select>
 
-                <a href="https://github.com/yisuchen/YourGuavaBanana/issues/new/choose" target="_blank" rel="noopener"
-                    class="btn btn-primary" id="submitBtn">
+                <button class="btn btn-primary" id="submitBtn">
                     🍌 投稿你的香蕉拔辣 🍐
-                </a>
+                </button>
             </div>
         </section>
 
@@ -69,6 +68,71 @@
             <!-- Pagination will be rendered here -->
         </section>
     </main>
+
+    <!-- Choice Modal -->
+    <div id="choiceModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close-button" id="closeChoice">&times;</span>
+            <div style="padding: 40px; text-align: center;">
+                <h2 style="margin-bottom: 20px;">選擇投稿方式</h2>
+                <p style="color: var(--text-muted); margin-bottom: 30px;">推薦使用 GitHub 投稿，您可以隨時修改內容</p>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <a href="https://github.com/yisuchen/YourGuavaBanana/issues/new/choose" target="_blank"
+                        class="btn btn-banana" style="width: 100%;">
+                        🐱 使用 GitHub 帳號投稿 (推薦)
+                    </a>
+                    <button id="openAnonForm" class="btn btn-guava" style="width: 100%;">
+                        👤 匿名快速投稿
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Anonymous Submit Form Modal -->
+    <div id="submitFormModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-button" id="closeSubmitForm">&times;</span>
+            <div style="padding: 40px;">
+                <h2 style="margin-bottom: 20px;">匿名投稿</h2>
+                <form id="anonSubmissionForm">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">標題 *</label>
+                        <input type="text" id="formTitle" required placeholder="例如：Midjourney 寫實人像"
+                            style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">提示詞內容 *</label>
+                        <textarea id="formPrompt" required rows="5" placeholder="請貼上您的提示詞..."
+                            style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white; font-family: monospace;"></textarea>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">分類</label>
+                            <select id="formCategorySelect"
+                                style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white; cursor: pointer;">
+                                <option value="">請選擇分類...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">標籤</label>
+                            <input type="text" id="formTags" placeholder="用逗號隔開"
+                                style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white;">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">作者 / 來源</label>
+                        <textarea id="formNotes" rows="2" placeholder="可選填，例如：@yisuchen 或 原始網址"
+                            style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white;"></textarea>
+                    </div>
+                    <button type="submit" id="submitAnonBtn" class="btn btn-guava" style="width: 100%;">
+                        🚀 送出投稿
+                    </button>
+                    <p id="submitStatus" style="margin-top: 15px; text-align: center; display: none;"></p>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal for Detailed View -->
     <div id="promptModal" class="modal">
