@@ -103,10 +103,14 @@ function processIssue(issue) {
         .map(l => typeof l === 'string' ? l : l.name)
         .filter(l => l !== CONFIG.label && l !== 'pending');
 
+    const rawPromptText = extractSection(issue.body, '提示詞內容');
+    // Remove Markdown images from prompt text to keep it clean
+    const cleanPromptText = rawPromptText ? rawPromptText.replace(/!\[.*?\]\(.*?\)/g, '').trim() : '';
+
     return {
         ...issue,
         displayTitle: displayTitle,
-        promptText: extractSection(issue.body, '提示詞內容'),
+        promptText: cleanPromptText,
         notes: extractSection(issue.body, '使用說明'),
         source: extractSection(issue.body, '來源 (Source)'),
         category: categoryFromSection ? categoryFromSection.trim() : '未分類',
@@ -520,6 +524,68 @@ function setupEventListeners() {
         }
     };
 
+    // --- Image Upload Preview Logic ---
+    const imageFileInput = document.getElementById('formImageFile');
+    const imagePreviewContainer = document.getElementById('formImagePreviewContainer');
+    const imagePreview = document.getElementById('formImagePreview');
+    const removeImageBtn = document.getElementById('removeImageBtn');
+
+    imageFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Check file size (15MB limit)
+            if (file.size > 15 * 1024 * 1024) {
+                alert('圖片太大囉！請選擇小於 15MB 的圖片。');
+                imageFileInput.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                imagePreviewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    removeImageBtn.onclick = () => {
+        imageFileInput.value = '';
+        imageFileInput._pastedBlob = null; // Clear pasted image
+        imagePreviewContainer.style.display = 'none';
+        imagePreview.src = '';
+    };
+
+    // Paste Image Support
+    document.getElementById('formPrompt').addEventListener('paste', (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (const item of items) {
+            if (item.type.indexOf('image') !== -1) {
+                const blob = item.getAsFile();
+                
+                if (blob.size > 15 * 1024 * 1024) {
+                    alert('貼上的圖片太大囉！請使用較小的圖片 (15MB 以內)。');
+                    return;
+                }
+
+                // Manually create a FileList-like structure or just handle the blob directly
+                // Since we can't programmatically set input.files easily with a Blob,
+                // we'll store the blob in a custom property on the input element for submission logic to use.
+                imageFileInput._pastedBlob = blob;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    imagePreview.src = event.target.result;
+                    imagePreviewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(blob);
+                
+                // Prevent pasting the binary code into text area
+                // e.preventDefault(); // Optional: Decide if we want to block text paste if image is mixed? Usually safest not to block unless sure.
+            }
+        }
+    });
+
     // Form Submission
     anonForm.onsubmit = async (e) => {
         e.preventDefault();
@@ -534,23 +600,55 @@ function setupEventListeners() {
 async function handleAnonSubmission() {
     const submitBtn = document.getElementById('submitAnonBtn');
     const statusEl = document.getElementById('submitStatus');
+    const imageFileInput = document.getElementById('formImageFile');
     
-    // Handle Category: Use selected value, fallback to 'Uncategorized' if empty
+    // Handle Category
     let category = document.getElementById('formCategorySelect').value;
     if (!category || category === '其他') {
-        // For simplicity in this version, "Other" or empty maps to a default string or could trigger an input
-        // If you want a text input for 'Other', we'd need more UI logic. 
-        // For now, let's default to "未分類" if empty, or "其他" if selected.
         if (!category) category = '未分類';
     }
 
+    // Prepare Base Data
     const data = {
         title: document.getElementById('formTitle').value,
         prompt: document.getElementById('formPrompt').value,
         category: category,
         tags: document.getElementById('formTags').value,
-        notes: document.getElementById('formNotes').value // This is now Author/Source
+        source: document.getElementById('formSource').value,
+        image: null
     };
+
+    // Process Image if exists
+    let fileToUpload = null;
+    
+    if (imageFileInput.files && imageFileInput.files[0]) {
+        fileToUpload = imageFileInput.files[0];
+    } else if (imageFileInput._pastedBlob) {
+        // Use the pasted blob, give it a generic name
+        fileToUpload = imageFileInput._pastedBlob;
+        if (!fileToUpload.name) {
+            // Add extension based on type
+            const ext = fileToUpload.type.split('/')[1] || 'png';
+            fileToUpload.name = `pasted_image.${ext}`;
+        }
+    }
+
+    if (fileToUpload) {
+        console.log("偵測到圖片檔案:", fileToUpload.name, "大小:", fileToUpload.size);
+        try {
+            const base64Content = await fileToBase64(fileToUpload);
+            data.image = {
+                content: base64Content.split(',')[1], // Strip data:image/png;base64,
+                name: fileToUpload.name,
+                type: fileToUpload.type
+            };
+            console.log("圖片已成功轉為 Base64");
+        } catch (e) {
+            console.error("圖片處理失敗:", e);
+        }
+    } else {
+        console.log("本次投稿沒有包含圖片");
+    }
 
     // Disable button and show loading
     submitBtn.disabled = true;
@@ -558,7 +656,7 @@ async function handleAnonSubmission() {
     submitBtn.innerHTML = '⏳ 處理中...';
     statusEl.style.display = 'block';
     statusEl.style.color = 'var(--accent-banana)';
-    statusEl.textContent = '正在發送投稿，請稍候...';
+    statusEl.textContent = '正在發送投稿 (包含上傳圖片)，請稍候...';
 
     try {
         const response = await fetch(CONFIG.worker_url, {
@@ -573,6 +671,7 @@ async function handleAnonSubmission() {
             statusEl.style.color = 'var(--accent-guava)';
             statusEl.textContent = '✅ 投稿成功！請等待審核，頁面將於 3 秒後關閉。';
             document.getElementById('anonSubmissionForm').reset();
+            document.getElementById('formImagePreviewContainer').style.display = 'none';
             
             setTimeout(() => {
                 document.getElementById('submitFormModal').style.display = 'none';
@@ -590,6 +689,16 @@ async function handleAnonSubmission() {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnText;
     }
+}
+
+// Helper to convert File to Base64
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
 }
 
 // --- Modal Functions (Largely same as before but using state object if needed) ---
@@ -641,7 +750,7 @@ function openModal(prompt) {
         notesGroup.style.display = 'none';
     }
 
-    // Source
+    // Source / Author
     const sourceGroup = document.getElementById('modalSourceGroup');
     const sourceContainer = document.getElementById('modalSource');
     if (prompt.source && prompt.source.trim()) {
