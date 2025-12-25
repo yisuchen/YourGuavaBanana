@@ -568,19 +568,15 @@ function setupEventListeners() {
         imagePreview.src = '';
     };
 
-    // Variables Builder
-    const varsContainer = document.getElementById('varsBuilderContainer');
-    const addVarBtn = document.getElementById('addVarBtn');
-    if (addVarBtn) {
-        addVarBtn.onclick = () => addVariableRow(varsContainer);
-    }
-    
-    // Paste Image Support
+    // Paste Image Support & Variable Auto-Sync
     const formPrompt = document.getElementById('formPrompt');
     const suggestionsEl = document.getElementById('varSuggestions');
     let selectedSuggestionIndex = -1;
 
     formPrompt.addEventListener('input', (e) => {
+        // Auto-sync variables
+        syncVariablesWithPrompt();
+
         const cursorSettings = getCursorXY(formPrompt, formPrompt.selectionStart);
         const text = formPrompt.value;
         const cursorPos = formPrompt.selectionStart;
@@ -687,14 +683,15 @@ function setupEventListeners() {
         formPrompt.focus();
         const newPos = before.length + replacement.length;
         formPrompt.setSelectionRange(newPos, newPos);
+        
+        // Trigger sync
+        syncVariablesWithPrompt();
     }
 
     // Helper to get cursor coordinates in textarea
     function getCursorXY(textarea, selectionStart) {
         const { offsetLeft, offsetTop } = textarea;
-        // Simple approximation: position below the textarea's start
-        // Finding exact X/Y in a textarea is complex, so we'll show it 
-        // at a fixed but helpful relative position within the container.
+        // Simple approximation
         return { x: 10, y: textarea.offsetTop + 30 };
     }
 
@@ -704,28 +701,13 @@ function setupEventListeners() {
             if (item.type.indexOf('image') !== -1) {
                 const blob = item.getAsFile();
                 
-                if (blob.size > 15 * 1024 * 1024) {
-                    alert('貼上的圖片太大囉！請使用較小的圖片 (15MB 以內)。');
+                if (blob.size > 10 * 1024 * 1024) {
+                    alert('貼上的圖片太大囉！請使用較小的圖片 (10MB 以內)。');
                     return;
                 }
 
                 // Manually create a FileList-like structure or just handle the blob directly
-                // Since we can't programmatically set input.files easily with a Blob,
-                // we'll store the blob in a custom property on the input element for submission logic to use.
-                imageFileInput._pastedBlob = blob;
-                
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    imagePreview.src = event.target.result;
-                    imagePreviewContainer.style.display = 'block';
-                };
-                reader.readAsDataURL(blob);
-                
-                // Prevent pasting the binary code into text area
-                // e.preventDefault(); // Optional: Decide if we want to block text paste if image is mixed? Usually safest not to block unless sure.
-            }
-        }
-    });
+
 
     // Form Submission
     anonForm.onsubmit = async (e) => {
@@ -1136,48 +1118,142 @@ function copyToClipboard(btn, text) {
     });
 }
 
-// --- Variables Builder Helpers ---
+// --- Variables Builder Helpers (Auto-Sync Mode) ---
 
-function addVariableRow(container) {
+function syncVariablesWithPrompt() {
+    const promptText = document.getElementById('formPrompt').value;
+    const container = document.getElementById('varsBuilderContainer');
+    
+    // 1. Extract Keys: {{key}}
+    // Support {{ key }} with spaces
+    const matches = [...promptText.matchAll(/{{(.*?)}}/g)];
+    const uniqueKeys = new Set();
+    matches.forEach(m => {
+        const key = m[1].trim();
+        if (key) uniqueKeys.add(key);
+    });
+
+    // 2. Remove rows for keys that no longer exist
+    const currentRows = Array.from(container.children);
+    currentRows.forEach(row => {
+        const rowKey = row.dataset.key;
+        if (!uniqueKeys.has(rowKey)) {
+            container.removeChild(row);
+        }
+    });
+
+    // 3. Add rows for new keys
+    uniqueKeys.forEach(key => {
+        // Check if row exists
+        const exists = currentRows.find(r => r.dataset.key === key);
+        if (!exists) {
+            createVariableRow(container, key);
+        }
+    });
+}
+
+function createVariableRow(container, key) {
     const row = document.createElement('div');
+    row.className = 'var-row';
+    row.dataset.key = key;
+    row.style.background = '#1e293b';
+    row.style.border = '1px solid #334155';
+    row.style.borderRadius = '8px';
+    row.style.padding = '10px';
     row.style.display = 'flex';
-    row.style.gap = '5px';
+    row.style.flexDirection = 'column';
+    row.style.gap = '8px';
+
+    // Header: Label
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+
+    const label = document.createElement('span');
+    label.textContent = `{{ ${key} }}`;
+    label.style.fontWeight = 'bold';
+    label.style.color = '#fbbf24'; // Banana
+    label.style.fontFamily = 'monospace';
     
-    const keyInput = document.createElement('input');
-    keyInput.placeholder = '變數名 (如 area)';
-    keyInput.style.width = '30%';
-    keyInput.style.padding = '8px';
-    keyInput.style.background = '#1e293b';
-    keyInput.style.border = '1px solid #334155';
-    keyInput.style.color = 'white';
-    keyInput.style.borderRadius = '4px';
+    header.appendChild(label);
+    row.appendChild(header);
+
+    // Tags Container
+    const tagsContainer = document.createElement('div');
+    tagsContainer.className = 'tags-container';
+    tagsContainer.style.display = 'flex';
+    tagsContainer.style.flexWrap = 'wrap';
+    tagsContainer.style.gap = '6px';
     
-    const valInput = document.createElement('input');
-    valInput.placeholder = '選項 (以逗號分隔)';
-    valInput.style.flex = '1';
-    valInput.style.padding = '8px';
-    valInput.style.background = '#1e293b';
-    valInput.style.border = '1px solid #334155';
-    valInput.style.color = 'white';
-    valInput.style.borderRadius = '4px';
+    // Input for new options
+    const input = document.createElement('input');
+    input.placeholder = '輸入選項按 Enter 新增 (如: 台北)';
+    input.style.flex = '1';
+    input.style.minWidth = '150px';
+    input.style.background = 'transparent';
+    input.style.border = 'none';
+    input.style.borderBottom = '1px solid #475569';
+    input.style.color = '#fff';
+    input.style.padding = '4px 0';
+    input.style.fontSize = '0.9rem';
     
-    const delBtn = document.createElement('button');
-    delBtn.textContent = '✕';
-    delBtn.style.padding = '0 10px';
-    delBtn.style.background = '#ef4444';
-    delBtn.style.color = 'white';
-    delBtn.style.border = 'none';
-    delBtn.style.borderRadius = '4px';
-    delBtn.style.cursor = 'pointer';
-    delBtn.onclick = () => container.removeChild(row);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const val = input.value.trim();
+            if (val) {
+                addTag(tagsContainer, val, input);
+                input.value = '';
+            }
+        }
+    });
+
+    // Blur also adds tag? Maybe optional, stick to Enter for now to avoid accidental adds.
     
-    row.appendChild(keyInput);
-    row.appendChild(valInput);
-    row.appendChild(delBtn);
+    row.appendChild(tagsContainer);
+    row.appendChild(input);
+    
     container.appendChild(row);
+
+    // Pre-fill if we have global suggestions? (Optional, skipping for now)
+}
+
+function addTag(container, text, inputElement) {
+    // Check duplicates
+    const existingTags = Array.from(container.children).map(c => c.dataset.value);
+    if (existingTags.includes(text)) return;
+
+    const tag = document.createElement('span');
+    tag.className = 'var-tag';
+    tag.dataset.value = text;
+    // Styling inline for simplicity
+    tag.style.display = 'inline-flex';
+    tag.style.alignItems = 'center';
+    tag.style.background = 'rgba(34, 197, 94, 0.2)'; // Guava green
+    tag.style.color = '#4ade80';
+    tag.style.padding = '2px 8px';
+    tag.style.borderRadius = '12px';
+    tag.style.fontSize = '0.85rem';
+    tag.style.gap = '6px';
     
-    // Auto focus key
-    keyInput.focus();
+    const textSpan = document.createElement('span');
+    textSpan.textContent = text;
+    
+    const removeBtn = document.createElement('span');
+    removeBtn.textContent = '×';
+    removeBtn.style.cursor = 'pointer';
+    removeBtn.style.fontWeight = 'bold';
+    removeBtn.style.opacity = '0.7';
+    removeBtn.onclick = () => {
+        container.removeChild(tag);
+    };
+
+    tag.appendChild(textSpan);
+    tag.appendChild(removeBtn);
+    
+    // Insert before the input? No, input is outside container in my design above.
+    container.appendChild(tag);
 }
 
 function collectVariables() {
@@ -1186,17 +1262,18 @@ function collectVariables() {
     
     const rows = container.children;
     let result = [];
+    
     for (let row of rows) {
-        const inputs = row.getElementsByTagName('input');
-        if (inputs.length >= 2) {
-            const key = inputs[0].value.trim();
-            const vals = inputs[1].value.trim();
-            if (key) {
-                // Determine separator based on content? Default to =
-                result.push(`${key} = ${vals}`);
+        const key = row.dataset.key;
+        const tagsContainer = row.querySelector('.tags-container');
+        if (tagsContainer) {
+            const tags = Array.from(tagsContainer.children).map(t => t.dataset.value);
+            if (tags.length > 0) {
+                result.push(`${key} = ${tags.join(', ')}`);
             }
         }
     }
+    
     return result.join('\n');
 }
 
