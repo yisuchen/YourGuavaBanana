@@ -1117,20 +1117,7 @@ function showVariablePopover(targetSpan, rawKey, localVariables = {}) {
         closePopover();
     };
 
-    if (options && Array.isArray(options) && options.length > 0) {
-        options.forEach(optVal => {
-            const item = document.createElement('div');
-            item.className = 'popover-option';
-            item.textContent = optVal;
-            item.onclick = (e) => {
-                e.stopPropagation();
-                handleSelect(optVal);
-            };
-            popover.appendChild(item);
-        });
-    }
-
-    // Always add an option to type manually if needed or if no options
+    // Always add an option to type manually at the top
     const inputWrapper = document.createElement('div');
     inputWrapper.className = 'popover-input-wrapper';
     
@@ -1155,6 +1142,19 @@ function showVariablePopover(targetSpan, rawKey, localVariables = {}) {
     inputWrapper.appendChild(input);
     inputWrapper.appendChild(btn);
     popover.appendChild(inputWrapper);
+
+    if (options && Array.isArray(options) && options.length > 0) {
+        options.forEach(optVal => {
+            const item = document.createElement('div');
+            item.className = 'popover-option';
+            item.textContent = optVal;
+            item.onclick = (e) => {
+                e.stopPropagation();
+                handleSelect(optVal);
+            };
+            popover.appendChild(item);
+        });
+    }
 
     document.body.appendChild(popover);
     currentPopover = popover;
