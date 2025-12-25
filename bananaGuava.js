@@ -847,25 +847,25 @@ function fileToBase64(file) {
 
 function openModal(prompt) {
     const modal = document.getElementById('promptModal');
+    // Use promptText if available, otherwise body
     const rawContent = prompt.promptText !== null ? prompt.promptText : prompt.body;
-    let contentToCopy = rawContent; // Base content
+    
+    // Store original content for reference
+    modal.dataset.rawContent = rawContent;
 
     const modalImage = document.getElementById('modalImage');
     
-    // 1. Reset to Loading state immediately
+    // 1. Reset to Loading state
     modalImage.src = 'https://placehold.co/800x600/1e293b/94a3b8?text=Loading...';
     modalImage.style.cursor = 'wait';
     modalImage.title = '載入中...';
     modalImage.onclick = null;
 
     if (prompt.imageUrl) {
-        // Optimized for modal view
         const optimizedUrl = `https://wsrv.nl/?url=${encodeURIComponent(prompt.imageUrl)}&w=800&q=85&output=webp`;
         
-        // 2. Preload image
         const img = new Image();
         img.onload = () => {
-            // Only update if the modal is still open and showing the same prompt (simple check)
             if (document.getElementById('promptModal').style.display === 'block') {
                 modalImage.src = optimizedUrl;
                 modalImage.style.cursor = 'zoom-in';
@@ -879,112 +879,44 @@ function openModal(prompt) {
         modalImage.style.cursor = 'default';
         modalImage.title = '';
     }
+    
     document.getElementById('modalCategory').textContent = prompt.category;
-    document.getElementById('modalPrompt').textContent = contentToCopy;
 
-    // --- Variables Handling ---
+    // --- Variables Handling (Inline) ---
+    const modalPrompt = document.getElementById('modalPrompt');
+    modalPrompt.innerHTML = ''; // Clear previous content
+
+    // We no longer use modalVariablesGroup separately
     const varsGroup = document.getElementById('modalVariablesGroup');
-    const varsList = document.getElementById('modalVariablesList');
-    varsGroup.style.display = 'none';
-    varsList.innerHTML = '';
+    if (varsGroup) varsGroup.style.display = 'none';
+
+    // Parse the content and render interactive elements
+    // Split by {{...}} capturing the braces and content
+    const parts = rawContent.split(/({{[^{}]+}})/g);
     
-    // Regex to find {{key}}
-    // Support spaces inside braces: {{ key }}
-    const regex = /{{(.*?)}}/g;
-    const matches = [...contentToCopy.matchAll(regex)];
-    
-    // Extract unique keys, preserving order
-    const uniqueKeys = [];
-    const seenKeys = new Set();
-    matches.forEach(m => {
-        const rawKey = m[1].trim();
-        if (!seenKeys.has(rawKey)) {
-            seenKeys.add(rawKey);
-            uniqueKeys.push(rawKey);
+    parts.forEach(part => {
+        const match = part.match(/{{(.*?)}}/);
+        if (match) {
+            const rawKey = match[1].trim();
+            // Create interactive span
+            const span = document.createElement('span');
+            span.className = 'variable-placeholder';
+            span.textContent = rawKey; // Initial text is the key
+            span.dataset.key = rawKey;
+            span.dataset.value = ''; // Currently no value selected
+            
+            // Add click handler for popover
+            span.onclick = (e) => {
+                e.stopPropagation(); // Prevent closing modal
+                showVariablePopover(span, rawKey);
+            };
+            
+            modalPrompt.appendChild(span);
+        } else {
+            // Regular text node
+            modalPrompt.appendChild(document.createTextNode(part));
         }
     });
-
-    // Store references to inputs for copy logic
-    const variableInputs = {}; 
-
-    if (uniqueKeys.length > 0) {
-        varsGroup.style.display = 'block';
-        
-        uniqueKeys.forEach(rawKey => {
-            const key = rawKey.toLowerCase().replace(/\s+/g, '_'); // Normalize for lookup in variables.json
-            // We use rawKey for display and replacement
-            
-            const row = document.createElement('div');
-            row.style.display = 'flex';
-            row.style.alignItems = 'center';
-            row.style.gap = '10px';
-            
-            const label = document.createElement('label');
-            label.textContent = rawKey;
-            label.style.minWidth = '80px';
-            label.style.color = '#cbd5e1';
-            label.style.fontSize = '0.9em';
-            
-            let inputEl;
-            
-            // Check if we have predefined options
-            let options = state.variables[key];
-            if (!options) {
-                 // Try simple lowercase
-                 options = state.variables[rawKey.toLowerCase()];
-            }
-
-            // Fallback: If 'text_1' or 'text_top' is not found, try 'text'
-            if (!options) {
-                const parts = key.split('_');
-                if (parts.length > 1) {
-                    const baseKey = parts.slice(0, -1).join('_');
-                    options = state.variables[baseKey];
-                }
-            }
-
-            if (options && Array.isArray(options) && options.length > 0) {
-                inputEl = document.createElement('select');
-                inputEl.className = 'var-input'; // Add class for styling if needed
-                inputEl.style.flex = '1';
-                inputEl.style.padding = '8px';
-                inputEl.style.borderRadius = '4px';
-                inputEl.style.border = '1px solid #475569';
-                inputEl.style.background = '#1e293b';
-                inputEl.style.color = 'white';
-                
-                // Add default empty option
-                const defaultOpt = document.createElement('option');
-                defaultOpt.value = "";
-                defaultOpt.textContent = `(選擇 ${rawKey})`;
-                inputEl.appendChild(defaultOpt);
-                
-                options.forEach(optVal => {
-                    const opt = document.createElement('option');
-                    opt.value = optVal;
-                    opt.textContent = optVal;
-                    inputEl.appendChild(opt);
-                });
-            } else {
-                inputEl = document.createElement('input');
-                inputEl.type = 'text';
-                inputEl.className = 'var-input';
-                inputEl.style.flex = '1';
-                inputEl.style.padding = '8px';
-                inputEl.style.borderRadius = '4px';
-                inputEl.style.border = '1px solid #475569';
-                inputEl.style.background = '#1e293b';
-                inputEl.style.color = 'white';
-                inputEl.placeholder = `輸入 ${rawKey}...`;
-            }
-            
-            variableInputs[rawKey] = inputEl;
-            
-            row.appendChild(label);
-            row.appendChild(inputEl);
-            varsList.appendChild(row);
-        });
-    }
 
     // Notes
     const notesGroup = document.getElementById('modalNotesGroup');
@@ -996,7 +928,7 @@ function openModal(prompt) {
         notesGroup.style.display = 'none';
     }
 
-    // Source / Author
+    // Source
     const sourceGroup = document.getElementById('modalSourceGroup');
     const sourceContainer = document.getElementById('modalSource');
     if (prompt.source && prompt.source.trim()) {
@@ -1009,8 +941,6 @@ function openModal(prompt) {
     // Tags
     const tagsGroup = document.getElementById('modalTagsGroup');
     const tagsContainer = document.getElementById('modalTags');
-    
-    // Use computed tags but exclude all categories
     const displayTags = prompt.computedTags.filter(t => !state.categories.has(t));
 
     if (displayTags.length > 0) {
@@ -1034,42 +964,162 @@ function openModal(prompt) {
     const newCopyBtn = copyBtn.cloneNode(true);
     copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
 
-    if (uniqueKeys.length > 0) {
-        newCopyBtn.innerHTML = '✨ 複製已替換提示詞';
-        newCopyBtn.classList.add('btn-primary'); // Make it stand out
-        
-        newCopyBtn.onclick = () => {
-            let finalPrompt = contentToCopy;
-            uniqueKeys.forEach(rawKey => {
-                const input = variableInputs[rawKey];
-                const value = input.value.trim();
-                if (value) {
-                    // Replace all occurrences of {{rawKey}} or {{ rawKey }}
-                    // We need a regex that matches the key with optional spaces
-                    const keyRegex = new RegExp(`{{\\s*${escapeRegExp(rawKey)}\\s*}}`, 'g');
-                    finalPrompt = finalPrompt.replace(keyRegex, value);
+    newCopyBtn.innerHTML = '📋 複製';
+    newCopyBtn.classList.remove('btn-primary');
+    newCopyBtn.onclick = () => {
+        // Construct the text from the current state of DOM
+        let finalPrompt = '';
+        modalPrompt.childNodes.forEach(node => {
+            if (node.nodeType === Node.TEXT_NODE) {
+                finalPrompt += node.textContent;
+            } else if (node.classList && node.classList.contains('variable-placeholder')) {
+                // If a value is selected (dataset.value), use it
+                // If not, use the original {{key}} format ? 
+                // User requirement: "When selection done... prompt text becomes: 'Area: taiwan'"
+                // So if value is set, use value. If not, use {{key}} or maybe just key? 
+                // Let's stick to: if value set -> value. Else -> {{key}} (original behavior)
+                const val = node.dataset.value;
+                if (val) {
+                    finalPrompt += val;
+                } else {
+                    finalPrompt += `{{${node.dataset.key}}}`;
                 }
-            });
-            copyToClipboard(newCopyBtn, finalPrompt);
-        };
-    } else {
-        newCopyBtn.innerHTML = '📋 複製';
-        newCopyBtn.classList.remove('btn-primary');
-        newCopyBtn.onclick = () => copyToClipboard(newCopyBtn, contentToCopy);
-    }
+            }
+        });
+        copyToClipboard(newCopyBtn, finalPrompt);
+    };
 
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
+
+    // Click outside to close popover
+    document.addEventListener('click', closePopoverOnClickOutside);
 }
 
-function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Variable Popover Logic
+let currentPopover = null;
+
+function showVariablePopover(targetSpan, rawKey) {
+    // Close existing
+    if (currentPopover) {
+        document.body.removeChild(currentPopover);
+        currentPopover = null;
+    }
+
+    const key = rawKey.toLowerCase().replace(/\s+/g, '_');
+    
+    // Find options
+    let options = state.variables[key];
+    if (!options) options = state.variables[rawKey.toLowerCase()];
+    // Fallback logic
+    if (!options) {
+        const parts = key.split('_');
+        if (parts.length > 1) {
+            const baseKey = parts.slice(0, -1).join('_');
+            options = state.variables[baseKey];
+        }
+    }
+
+    const popover = document.createElement('div');
+    popover.className = 'variable-popover';
+    
+    const header = document.createElement('div');
+    header.className = 'popover-header';
+    header.textContent = `選擇 ${rawKey}`;
+    popover.appendChild(header);
+
+    const handleSelect = (value) => {
+        targetSpan.textContent = value;
+        targetSpan.dataset.value = value;
+        targetSpan.classList.add('filled');
+        closePopover();
+    };
+
+    if (options && Array.isArray(options) && options.length > 0) {
+        options.forEach(optVal => {
+            const item = document.createElement('div');
+            item.className = 'popover-option';
+            item.textContent = optVal;
+            item.onclick = (e) => {
+                e.stopPropagation();
+                handleSelect(optVal);
+            };
+            popover.appendChild(item);
+        });
+    }
+
+    // Always add an option to type manually if needed or if no options
+    const inputWrapper = document.createElement('div');
+    inputWrapper.className = 'popover-input-wrapper';
+    
+    const input = document.createElement('input');
+    input.className = 'popover-input';
+    input.placeholder = '自訂...';
+    input.onclick = (e) => e.stopPropagation(); // Focus input
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+            handleSelect(input.value);
+        }
+    };
+
+    const btn = document.createElement('button');
+    btn.className = 'popover-btn';
+    btn.textContent = '確認';
+    btn.onclick = (e) => {
+        e.stopPropagation();
+        handleSelect(input.value);
+    };
+
+    inputWrapper.appendChild(input);
+    inputWrapper.appendChild(btn);
+    popover.appendChild(inputWrapper);
+
+    document.body.appendChild(popover);
+    currentPopover = popover;
+
+    // Positioning
+    const rect = targetSpan.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    
+    popover.style.top = `${rect.bottom + scrollTop + 5}px`;
+    popover.style.left = `${rect.left + scrollLeft}px`;
+    
+    // Adjust if off-screen (simple check)
+    if (rect.left + 200 > window.innerWidth) {
+        popover.style.left = `${window.innerWidth - 220}px`;
+    }
+}
+
+function closePopover() {
+    if (currentPopover) {
+        if (currentPopover.parentNode) {
+            currentPopover.parentNode.removeChild(currentPopover);
+        }
+        currentPopover = null;
+    }
+}
+
+function closePopoverOnClickOutside(e) {
+    if (currentPopover && !currentPopover.contains(e.target)) {
+        // If clicking the placeholder itself, we handled that in onclick (stopPropagation)
+        // But if clicking another placeholder, this will fire first?
+        // Actually the stopPropagation on span onclick prevents this from firing when clicking the span itself.
+        // So this handles clicking anywhere else.
+        closePopover();
+    }
 }
 
 function closeModal() {
     const modal = document.getElementById('promptModal');
     modal.style.display = 'none';
     document.body.style.overflow = 'auto';
+    closePopover();
+    document.removeEventListener('click', closePopoverOnClickOutside);
+}
+
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function copyToClipboard(btn, text) {
