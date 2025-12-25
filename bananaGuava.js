@@ -705,8 +705,16 @@ function setupEventListeners() {
                     alert('貼上的圖片太大囉！請使用較小的圖片 (10MB 以內)。');
                     return;
                 }
-
-                // Manually create a FileList-like structure or just handle the blob directly
+                imageFileInput._pastedBlob = blob;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    imagePreview.src = event.target.result;
+                    imagePreviewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(blob);
+            }
+        }
+    });
 
 
     // Form Submission
