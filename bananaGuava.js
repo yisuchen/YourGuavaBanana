@@ -565,6 +565,58 @@ function setupEventListeners() {
     const imagePreview = document.getElementById('formImagePreview');
     const removeImageBtn = document.getElementById('removeImageBtn');
 
+    // --- Tags Pill Logic ---
+    const tagsInput = document.getElementById('formTagsInput');
+    const tagsContainer = document.getElementById('formTagsContainer');
+
+    tagsInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const val = tagsInput.value.trim();
+            if (val) {
+                addTagPill(tagsContainer, val, tagsInput);
+                tagsInput.value = '';
+            }
+        }
+    });
+
+    function addTagPill(container, text, inputElement) {
+        // Check duplicates (exclude the input itself)
+        const existingTags = Array.from(container.querySelectorAll('.var-tag')).map(t => t.dataset.value);
+        if (existingTags.includes(text)) return;
+
+        const tag = document.createElement('span');
+        tag.className = 'var-tag';
+        tag.dataset.value = text;
+        tag.style.display = 'inline-flex';
+        tag.style.alignItems = 'center';
+        tag.style.background = 'rgba(251, 191, 36, 0.2)'; // Banana yellow tint for tags
+        tag.style.color = 'var(--accent-banana)';
+        tag.style.padding = '2px 8px';
+        tag.style.borderRadius = '12px';
+        tag.style.fontSize = '0.85rem';
+        tag.style.gap = '6px';
+        
+        const textSpan = document.createElement('span');
+        textSpan.textContent = text;
+        
+        const removeBtn = document.createElement('span');
+        removeBtn.textContent = '×';
+        removeBtn.style.cursor = 'pointer';
+        removeBtn.style.fontWeight = 'bold';
+        removeBtn.style.opacity = '0.7';
+        removeBtn.onclick = (e) => {
+            e.stopPropagation();
+            container.removeChild(tag);
+        };
+
+        tag.appendChild(textSpan);
+        tag.appendChild(removeBtn);
+        
+        // Insert before the input
+        container.insertBefore(tag, inputElement);
+    }
+
     imageFileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -767,7 +819,7 @@ async function handleAnonSubmission() {
         title: document.getElementById('formTitle').value,
         prompt: document.getElementById('formPrompt').value,
         category: category,
-        tags: document.getElementById('formTags').value,
+        tags: Array.from(document.querySelectorAll('#formTagsContainer .var-tag')).map(t => t.dataset.value).join(','),
         source: document.getElementById('formSource').value,
         variables: collectVariables(),
         image: null
@@ -831,6 +883,14 @@ async function handleAnonSubmission() {
             const varsContainer = document.getElementById('varsBuilderContainer');
             if (varsContainer) {
                 varsContainer.innerHTML = '';
+            }
+
+            // Manually clear tags pills
+            const tagsContainer = document.getElementById('formTagsContainer');
+            if (tagsContainer) {
+                const pills = tagsContainer.querySelectorAll('.var-tag');
+                pills.forEach(p => tagsContainer.removeChild(p));
+                document.getElementById('formTagsInput').value = '';
             }
 
             document.getElementById('formImagePreviewContainer').style.display = 'none';

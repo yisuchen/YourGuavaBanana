@@ -127,8 +127,11 @@
                         </div>
                         <div class="form-group">
                             <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">標籤</label>
-                            <input type="text" id="formTags" placeholder="用逗號隔開"
-                                style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white;">
+                            <div id="formTagsContainer" style="display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; min-height: 42px;">
+                                <input type="text" id="formTagsInput" placeholder="輸入後按 Enter 新增"
+                                    style="flex: 1; min-width: 120px; background: transparent; border: none; color: white; outline: none; padding: 2px 0;">
+                            </div>
+                            <input type="hidden" id="formTags" value="">
                         </div>
                     </div>
                     <div class="form-group" style="margin-bottom: 15px;">
