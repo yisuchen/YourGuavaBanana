@@ -826,6 +826,13 @@ async function handleAnonSubmission() {
             statusEl.style.color = 'var(--accent-guava)';
             statusEl.textContent = '✅ 投稿成功！請等待審核，頁面將於 3 秒後關閉。';
             document.getElementById('anonSubmissionForm').reset();
+            
+            // Manually clear dynamic variables container
+            const varsContainer = document.getElementById('varsBuilderContainer');
+            if (varsContainer) {
+                varsContainer.innerHTML = '';
+            }
+
             document.getElementById('formImagePreviewContainer').style.display = 'none';
             
             setTimeout(() => {
