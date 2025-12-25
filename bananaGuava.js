@@ -102,9 +102,31 @@ function processIssue(issue) {
     const tagsFromSection = extractSection(issue.body, '標籤');
     const categoryFromSection = extractSection(issue.body, '分類');
 
+    // Parse Variables from body (localized variables for this prompt)
+    const localVariables = {};
+    const varMatch = issue.body.match(/Variables\s*\(key=value\)\s*([\s\S]*?)(?=\n\n|###|$)/i);
+    if (varMatch) {
+        const lines = varMatch[1].trim().split('\n');
+        lines.forEach(line => {
+            const parts = line.split('=');
+            if (parts.length >= 2) {
+                const key = parts[0].trim().toLowerCase().replace(/\s+/g, '_');
+                const values = parts.slice(1).join('=').split(/[,，]/).map(v => v.trim()).filter(v => v);
+                localVariables[key] = values;
+                // Also store without underscore for better matching
+                localVariables[parts[0].trim().toLowerCase()] = values;
+            }
+        });
+    }
+
+    const cleanContent = (text) => {
+        if (!text) return text;
+        return text.split(/Variables\s*\(key=value\)/i)[0].trim();
+    };
+
     let customTags = [];
     if (tagsFromSection) {
-        customTags = tagsFromSection
+        customTags = cleanContent(tagsFromSection)
             .split(/[,，]/)
             .map(t => t.trim())
             .filter(t => t);
@@ -117,12 +139,13 @@ function processIssue(issue) {
 
     const rawPromptText = extractSection(issue.body, '提示詞內容');
     // Remove Markdown images from prompt text to keep it clean
-    const cleanPromptText = rawPromptText ? rawPromptText.replace(/!\[.*?\]\(.*?\)/g, '').trim() : '';
+    const cleanPromptText = rawPromptText ? cleanContent(rawPromptText.replace(/!\[.*?\]\(.*?\)/g, '')).trim() : '';
 
     return {
         ...issue,
         displayTitle: displayTitle,
         promptText: cleanPromptText,
+        localVariables,
         notes: extractSection(issue.body, '使用說明'),
         source: extractSection(issue.body, '來源 (Source)'),
         category: categoryFromSection ? categoryFromSection.trim() : '未分類',
@@ -898,7 +921,7 @@ function openModal(prompt) {
             // Add click handler for popover
             span.onclick = (e) => {
                 e.stopPropagation(); // Prevent closing modal
-                showVariablePopover(span, rawKey);
+                showVariablePopover(span, rawKey, prompt.localVariables);
             };
             
             modalPrompt.appendChild(span);
@@ -989,7 +1012,7 @@ function openModal(prompt) {
 // Variable Popover Logic
 let currentPopover = null;
 
-function showVariablePopover(targetSpan, rawKey) {
+function showVariablePopover(targetSpan, rawKey, localVariables = {}) {
     // Close existing
     if (currentPopover) {
         document.body.removeChild(currentPopover);
@@ -998,15 +1021,17 @@ function showVariablePopover(targetSpan, rawKey) {
 
     const key = rawKey.toLowerCase().replace(/\s+/g, '_');
     
-    // Find options
-    let options = state.variables[key];
-    if (!options) options = state.variables[rawKey.toLowerCase()];
-    // Fallback logic
+    // Find options: prioritize local variables from the issue body
+    let options = (localVariables && (localVariables[key] || localVariables[rawKey.toLowerCase()])) || 
+                  state.variables[key] || 
+                  state.variables[rawKey.toLowerCase()];
+    
+    // Fallback logic for keys like text_1, text_2 to use base key 'text'
     if (!options) {
         const parts = key.split('_');
         if (parts.length > 1) {
             const baseKey = parts.slice(0, -1).join('_');
-            options = state.variables[baseKey];
+            options = (localVariables && localVariables[baseKey]) || state.variables[baseKey];
         }
     }
 
