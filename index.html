@@ -169,6 +169,12 @@
                             style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white;"></textarea>
                     </div>
 
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">編輯密碼 * (修改時需驗證)</label>
+                        <input type="password" id="formPassword" required placeholder="請輸入 4-12 位英數密碼"
+                            style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white;">
+                    </div>
+
                     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                         <button type="submit" id="submitAnonBtn" class="btn btn-guava" style="flex: 1;">
                             🚀 匿名投稿
@@ -234,8 +240,12 @@
                             <div class="modal-action-buttons" style="display: flex; gap: 10px; flex-wrap: wrap;">
                                 <a href="#" id="modalEditBtn" target="_blank" rel="noopener" class="btn btn-outline"
                                     style="flex: 1; min-width: 120px; text-align: center;">
-                                    📝 查看 / 編輯
+                                    📝 在 GitHub 查看
                                 </a>
+                                <button id="modalAnonEditBtn" class="btn btn-outline"
+                                    style="flex: 1; min-width: 120px; text-align: center;">
+                                    👤 匿名編輯
+                                </button>
                                 <a href="#" id="modalShareLink" target="_blank" rel="noopener" class="btn btn-outline"
                                     style="flex: 2; min-width: 200px;">
                                     🍌 投稿你的香蕉拔辣
@@ -246,6 +256,22 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- Password Verify Modal -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close-button" id="closePasswordModal">&times;</span>
+            <div style="padding: 40px; text-align: center;">
+                <h2 style="margin-bottom: 20px;">身份驗證</h2>
+                <p style="color: var(--text-muted); margin-bottom: 20px;">請輸入此投稿的編輯密碼</p>
+                <input type="password" id="verifyPasswordInput" placeholder="請輸入密碼"
+                    style="width: 100%; padding: 12px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white; margin-bottom: 20px; text-align: center;">
+                <button id="confirmPasswordBtn" class="btn btn-primary" style="width: 100%;">
+                    確認
+                </button>
+            </div>
         </div>
     </div>
 

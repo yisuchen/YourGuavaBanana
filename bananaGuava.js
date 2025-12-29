@@ -14,6 +14,7 @@ let state = {
     categories: new Set(),
     tags: new Set(),
     variables: {},
+    editingPrompt: null, // Tracks the prompt currently being edited
     filters: {
         search: '',
         category: 'All', // 'All' or specific category name
@@ -576,6 +577,10 @@ function setupEventListeners() {
     const anonForm = document.getElementById('anonSubmissionForm');
 
     openAnonForm.onclick = () => {
+        state.editingPrompt = null; // Clear edit state
+        document.getElementById('submitAnonBtn').innerHTML = '🚀 匿名投稿';
+        document.getElementById('anonSubmissionForm').reset();
+        
         // Populate Categories
         const select = document.getElementById('formCategorySelect');
         // Keep the first default option
@@ -606,6 +611,28 @@ function setupEventListeners() {
         document.body.style.overflow = 'auto';
     };
 
+    // Password Modal
+    const passwordModal = document.getElementById('passwordModal');
+    const closePasswordModal = document.getElementById('closePasswordModal');
+    const confirmPasswordBtn = document.getElementById('confirmPasswordBtn');
+    const verifyPasswordInput = document.getElementById('verifyPasswordInput');
+
+    closePasswordModal.onclick = () => {
+        passwordModal.style.display = 'none';
+    };
+
+    confirmPasswordBtn.onclick = () => {
+        const pwd = verifyPasswordInput.value;
+        if (!pwd) return alert('請輸入密碼');
+        
+        // Set the password into the main form
+        document.getElementById('formPassword').value = pwd;
+        passwordModal.style.display = 'none';
+        
+        // Open edit form
+        openEditForm();
+    };
+
     // Global click to close modals
     window.onclick = (event) => {
         if (event.target == modal) closeModal();
@@ -616,6 +643,9 @@ function setupEventListeners() {
         if (event.target == submitFormModal) {
             submitFormModal.style.display = 'none';
             document.body.style.overflow = 'auto';
+        }
+        if (event.target == passwordModal) {
+            passwordModal.style.display = 'none';
         }
     };
 
@@ -867,6 +897,7 @@ async function handleAnonSubmission() {
     const submitBtn = document.getElementById('submitAnonBtn');
     const statusEl = document.getElementById('submitStatus');
     const imageFileInput = document.getElementById('formImageFile');
+    const isUpdate = !!state.editingPrompt;
     
     // Handle Category
     let category = document.getElementById('formCategorySelect').value;
@@ -882,8 +913,14 @@ async function handleAnonSubmission() {
         tags: Array.from(document.querySelectorAll('#formTagsContainer .var-tag')).map(t => t.dataset.value).join(','),
         source: document.getElementById('formSource').value,
         variables: collectVariables(),
+        password: document.getElementById('formPassword').value,
         image: null
     };
+
+    if (isUpdate) {
+        data.number = state.editingPrompt.number;
+        data.existingImageUrl = state.editingPrompt.imageUrl;
+    }
 
     // Process Image if exists
     let fileToUpload = null;
@@ -901,7 +938,6 @@ async function handleAnonSubmission() {
     }
 
     if (fileToUpload) {
-        console.log("偵測到圖片檔案:", fileToUpload.name, "大小:", fileToUpload.size);
         try {
             const base64Content = await fileToBase64(fileToUpload);
             data.image = {
@@ -909,12 +945,9 @@ async function handleAnonSubmission() {
                 name: fileToUpload.name,
                 type: fileToUpload.type
             };
-            console.log("圖片已成功轉為 Base64");
         } catch (e) {
             console.error("圖片處理失敗:", e);
         }
-    } else {
-        console.log("本次投稿沒有包含圖片");
     }
 
     // Disable button and show loading
@@ -923,11 +956,11 @@ async function handleAnonSubmission() {
     submitBtn.innerHTML = '⏳ 處理中...';
     statusEl.style.display = 'block';
     statusEl.style.color = 'var(--accent-banana)';
-    statusEl.textContent = '正在發送投稿 (包含上傳圖片)，請稍候...';
+    statusEl.textContent = isUpdate ? '正在更新投稿，請稍候...' : '正在發送投稿 (包含上傳圖片)，請稍候...';
 
     try {
         const response = await fetch(CONFIG.worker_url, {
-            method: 'POST',
+            method: isUpdate ? 'PUT' : 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
@@ -936,31 +969,38 @@ async function handleAnonSubmission() {
 
         if (result.success) {
             statusEl.style.color = 'var(--accent-guava)';
-            statusEl.textContent = '✅ 投稿成功！請等待審核，頁面將於 3 秒後關閉。';
-            document.getElementById('anonSubmissionForm').reset();
+            statusEl.textContent = isUpdate ? '✅ 更新成功！即將重新載入頁面。' : '✅ 投稿成功！請等待審核，頁面將於 3 秒後關閉。';
             
-            // Manually clear dynamic variables container
-            const varsContainer = document.getElementById('varsBuilderContainer');
-            if (varsContainer) {
-                varsContainer.innerHTML = '';
-            }
+            if (!isUpdate) {
+                document.getElementById('anonSubmissionForm').reset();
+                
+                // Manually clear dynamic variables container
+                const varsContainer = document.getElementById('varsBuilderContainer');
+                if (varsContainer) {
+                    varsContainer.innerHTML = '';
+                }
 
-            // Manually clear tags pills
-            const tagsContainer = document.getElementById('formTagsContainer');
-            if (tagsContainer) {
-                const pills = tagsContainer.querySelectorAll('.var-tag');
-                pills.forEach(p => tagsContainer.removeChild(p));
-                document.getElementById('formTagsInput').value = '';
-            }
+                // Manually clear tags pills
+                const tagsContainer = document.getElementById('formTagsContainer');
+                if (tagsContainer) {
+                    const pills = tagsContainer.querySelectorAll('.var-tag');
+                    pills.forEach(p => tagsContainer.removeChild(p));
+                    document.getElementById('formTagsInput').value = '';
+                }
 
-            document.getElementById('formImagePreviewContainer').style.display = 'none';
+                document.getElementById('formImagePreviewContainer').style.display = 'none';
+            }
             
             setTimeout(() => {
-                document.getElementById('submitFormModal').style.display = 'none';
-                document.body.style.overflow = 'auto';
-                statusEl.style.display = 'none';
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
+                if (isUpdate) {
+                    window.location.reload();
+                } else {
+                    document.getElementById('submitFormModal').style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                    statusEl.style.display = 'none';
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                }
             }, 3000);
         } else {
             throw new Error(result.error || '發送失敗');
@@ -1108,6 +1148,13 @@ function openModal(prompt) {
     const editBtn = document.getElementById('modalEditBtn');
     editBtn.href = prompt.url;
 
+    const anonEditBtn = document.getElementById('modalAnonEditBtn');
+    anonEditBtn.onclick = () => {
+        state.editingPrompt = prompt;
+        document.getElementById('verifyPasswordInput').value = '';
+        document.getElementById('passwordModal').style.display = 'block';
+    };
+
     // Generate Button Logic
     const genBtn = document.getElementById('modalGenBtn');
     const newGenBtn = genBtn.cloneNode(true);
@@ -1191,6 +1238,100 @@ function openModal(prompt) {
 
     // Click outside to close popover
     document.addEventListener('click', closePopoverOnClickOutside);
+}
+
+function openEditForm() {
+    const prompt = state.editingPrompt;
+    if (!prompt) return;
+
+    // Close detail modal and open form modal
+    closeModal();
+    document.getElementById('choiceModal').style.display = 'none';
+    document.getElementById('submitFormModal').style.display = 'block';
+    
+    // Set button text
+    document.getElementById('submitAnonBtn').innerHTML = '💾 更新投稿';
+
+    // Pre-fill fields
+    document.getElementById('formTitle').value = prompt.displayTitle;
+    document.getElementById('formPrompt').value = prompt.promptText;
+    document.getElementById('formSource').value = prompt.source === 'No response' ? '' : prompt.source;
+    
+    // Category
+    const select = document.getElementById('formCategorySelect');
+    select.innerHTML = '<option value="">請選擇分類...</option>';
+    Array.from(state.categories).sort().forEach(cat => {
+        if (cat !== 'All' && cat !== '全部') {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.textContent = cat;
+            if (cat === prompt.category) option.selected = true;
+            select.appendChild(option);
+        }
+    });
+    
+    // Handle "Other" if category not in list
+    if (!Array.from(state.categories).has(prompt.category) && prompt.category !== '未分類') {
+        const otherOption = document.createElement('option');
+        otherOption.value = prompt.category;
+        otherOption.textContent = `${prompt.category} (現有)`;
+        otherOption.selected = true;
+        select.appendChild(otherOption);
+    }
+
+    // Tags
+    const tagsContainer = document.getElementById('formTagsContainer');
+    const tagsInput = document.getElementById('formTagsInput');
+    // Clear existing pills
+    Array.from(tagsContainer.querySelectorAll('.var-tag')).forEach(p => tagsContainer.removeChild(p));
+    
+    if (prompt.customTags && prompt.customTags.length > 0) {
+        prompt.customTags.forEach(t => {
+            // Reuse addTagPill if available or inline it
+            // The addTagPill is defined inside setupEventListeners, let's make it more accessible
+            // or just copy logic here
+            const tag = document.createElement('span');
+            tag.className = 'var-tag';
+            tag.dataset.value = t;
+            tag.style.display = 'inline-flex';
+            tag.style.alignItems = 'center';
+            tag.style.background = 'rgba(251, 191, 36, 0.2)';
+            tag.style.color = 'var(--accent-banana)';
+            tag.style.padding = '2px 8px';
+            tag.style.borderRadius = '12px';
+            tag.style.fontSize = '0.85rem';
+            tag.style.gap = '6px';
+            tag.innerHTML = `<span>${escapeHtml(t)}</span><span style="cursor:pointer;font-weight:bold;opacity:0.7;" onclick="this.parentElement.parentNode.removeChild(this.parentElement)">×</span>`;
+            tagsContainer.insertBefore(tag, tagsInput);
+        });
+    }
+
+    // Variables Builder
+    syncVariablesWithPrompt();
+    // After sync, pre-fill the values for existing variables
+    const varsContainer = document.getElementById('varsBuilderContainer');
+    if (prompt.localVariables) {
+        Object.keys(prompt.localVariables).forEach(key => {
+            const row = Array.from(varsContainer.children).find(r => r.dataset.key.toLowerCase().replace(/\s+/g, '_') === key);
+            if (row) {
+                const tagsCont = row.querySelector('.tags-container');
+                const values = prompt.localVariables[key];
+                if (Array.isArray(values)) {
+                    values.forEach(v => addTag(tagsCont, v, null));
+                }
+            }
+        });
+    }
+
+    // Image Preview
+    const imagePreviewContainer = document.getElementById('formImagePreviewContainer');
+    const imagePreview = document.getElementById('formImagePreview');
+    if (prompt.imageUrl) {
+        imagePreview.src = prompt.imageUrl;
+        imagePreviewContainer.style.display = 'block';
+    } else {
+        imagePreviewContainer.style.display = 'none';
+    }
 }
 
 // Variable Popover Logic
