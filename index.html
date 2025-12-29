@@ -82,28 +82,6 @@
         </section>
     </main>
 
-    <!-- Choice Modal -->
-    <div id="choiceModal" class="modal">
-        <div class="modal-content" style="max-width: 500px;">
-            <span class="close-button" id="closeChoice">&times;</span>
-            <div style="padding: 40px; text-align: center;">
-                <h2 style="margin-bottom: 20px;">選擇投稿方式</h2>
-                <p style="color: var(--text-muted); margin-bottom: 30px;">推薦使用 GitHub 投稿，您可以隨時修改內容</p>
-                <div style="display: flex; flex-direction: column; gap: 15px;">
-                    <a href="https://github.com/yisuchen/YourGuavaBanana/issues/new/choose" target="_blank"
-                        class="btn btn-primary" style="width: 100%;">
-                        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" width="20"
-                            height="20" style="filter: invert(1); margin-right: 8px;">
-                        使用 GitHub 帳號投稿 (推薦)
-                    </a>
-                    <button id="openAnonForm" class="btn btn-guava" style="width: 100%;">
-                        👤 匿名快速投稿
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Anonymous Submit Form Modal -->
     <div id="submitFormModal" class="modal">
         <div class="modal-content" style="max-width: 600px;">
@@ -246,11 +224,11 @@
                             <div class="modal-action-buttons" style="display: flex; gap: 10px; flex-wrap: wrap;">
                                 <a href="#" id="modalEditBtn" target="_blank" rel="noopener" class="btn btn-outline"
                                     style="flex: 1; min-width: 120px; text-align: center;">
-                                    📝 在 GitHub 查看
+                                    📝 查看
                                 </a>
                                 <button id="modalAnonEditBtn" class="btn btn-outline"
                                     style="flex: 1; min-width: 120px; text-align: center;">
-                                    👤 匿名編輯
+                                    👤 編輯
                                 </button>
                                 <a href="#" id="modalShareLink" target="_blank" rel="noopener" class="btn btn-outline"
                                     style="flex: 2; min-width: 200px;">

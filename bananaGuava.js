@@ -44,6 +44,44 @@ async function init() {
     await fetchPrompts();
 }
 
+function openAnonFormLogic() {
+    const submitFormModal = document.getElementById('submitFormModal');
+    if (!submitFormModal) return;
+
+    state.editingPrompt = null; // Clear edit state
+    document.getElementById('submitAnonBtn').innerHTML = '🚀 匿名投稿';
+    document.getElementById('anonSubmissionForm').reset();
+    
+    // Show password field
+    const passwordField = document.getElementById('formPassword').parentElement;
+    if (passwordField) passwordField.style.display = 'block';
+    document.getElementById('formPassword').required = true;
+
+    // Populate Categories
+    const select = document.getElementById('formCategorySelect');
+    // Keep the first default option
+    select.innerHTML = '<option value="">請選擇分類...</option>';
+    
+    const sortedCategories = Array.from(state.categories).sort();
+    sortedCategories.forEach(cat => {
+        if (cat !== 'All' && cat !== '全部') {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.textContent = cat;
+            select.appendChild(option);
+        }
+    });
+    
+    // Add "Other" option
+    const otherOption = document.createElement('option');
+    otherOption.value = "其他";
+    otherOption.textContent = "其他 (手動輸入)";
+    select.appendChild(otherOption);
+
+    submitFormModal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
 async function fetchPrompts() {
     const { owner, repo, label, per_page } = CONFIG;
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/issues?state=open&labels=${label}&per_page=${per_page}`;
@@ -556,61 +594,16 @@ function setupEventListeners() {
     const closeBtn = modal.querySelector('.close-button');
     closeBtn.onclick = () => closeModal();
 
-    // Choice Modal
-    const choiceModal = document.getElementById('choiceModal');
+    // Submission Button
     const submitBtn = document.getElementById('submitBtn');
-    const closeChoice = document.getElementById('closeChoice');
-    const openAnonForm = document.getElementById('openAnonForm');
-
     submitBtn.onclick = () => {
-        choiceModal.style.display = 'block';
-        document.body.style.overflow = 'hidden';
-    };
-
-    closeChoice.onclick = () => {
-        choiceModal.style.display = 'none';
-        document.body.style.overflow = 'auto';
+        openAnonFormLogic();
     };
 
     // Anonymous Form Modal
     const submitFormModal = document.getElementById('submitFormModal');
     const closeSubmitForm = document.getElementById('closeSubmitForm');
     const anonForm = document.getElementById('anonSubmissionForm');
-
-    openAnonForm.onclick = () => {
-        state.editingPrompt = null; // Clear edit state
-        document.getElementById('submitAnonBtn').innerHTML = '🚀 匿名投稿';
-        document.getElementById('anonSubmissionForm').reset();
-        
-        // Show password field
-        const passwordField = document.getElementById('formPassword').parentElement;
-        if (passwordField) passwordField.style.display = 'block';
-        document.getElementById('formPassword').required = true;
-
-        // Populate Categories
-        const select = document.getElementById('formCategorySelect');
-        // Keep the first default option
-        select.innerHTML = '<option value="">請選擇分類...</option>';
-        
-        const sortedCategories = Array.from(state.categories).sort();
-        sortedCategories.forEach(cat => {
-            if (cat !== 'All' && cat !== '全部') {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                select.appendChild(option);
-            }
-        });
-        
-        // Add "Other" option
-        const otherOption = document.createElement('option');
-        otherOption.value = "其他";
-        otherOption.textContent = "其他 (手動輸入)";
-        select.appendChild(otherOption);
-
-        choiceModal.style.display = 'none';
-        submitFormModal.style.display = 'block';
-    };
 
     closeSubmitForm.onclick = () => {
         submitFormModal.style.display = 'none';
@@ -644,10 +637,6 @@ function setupEventListeners() {
     // Global click to close modals
     window.onclick = (event) => {
         if (event.target == modal) closeModal();
-        if (event.target == choiceModal) {
-            choiceModal.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
         if (event.target == submitFormModal) {
             submitFormModal.style.display = 'none';
             document.body.style.overflow = 'auto';
@@ -1154,18 +1143,17 @@ function openModal(prompt) {
     shareLink.onclick = (e) => {
         e.preventDefault();
         closeModal(); // Close detail modal
-        
-        // Open choice modal (or directly open anon form as per user preference)
-        // Let's directly open the anon form since the text says "投稿你的香蕉拔辣"
-        const openAnonFormBtn = document.getElementById('openAnonForm');
-        if (openAnonFormBtn) openAnonFormBtn.click();
+        openAnonFormLogic();
     };
 
     const editBtn = document.getElementById('modalEditBtn');
     editBtn.href = prompt.url;
 
     const anonEditBtn = document.getElementById('modalAnonEditBtn');
-    anonEditBtn.onclick = () => {
+    const newAnonEditBtn = anonEditBtn.cloneNode(true);
+    anonEditBtn.parentNode.replaceChild(newAnonEditBtn, anonEditBtn);
+    
+    newAnonEditBtn.onclick = () => {
         state.editingPrompt = prompt;
         openEditForm();
     };
@@ -1261,7 +1249,6 @@ function openEditForm() {
 
     // Close detail modal and open form modal
     closeModal();
-    document.getElementById('choiceModal').style.display = 'none';
     document.getElementById('submitFormModal').style.display = 'block';
     
     // Set button text
@@ -1307,9 +1294,6 @@ function openEditForm() {
     
     if (prompt.customTags && prompt.customTags.length > 0) {
         prompt.customTags.forEach(t => {
-            // Reuse addTagPill if available or inline it
-            // The addTagPill is defined inside setupEventListeners, let's make it more accessible
-            // or just copy logic here
             const tag = document.createElement('span');
             tag.className = 'var-tag';
             tag.dataset.value = t;
