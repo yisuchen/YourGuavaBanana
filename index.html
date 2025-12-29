@@ -176,52 +176,37 @@
             <span class="close-button" aria-label="Close">&times;</span>
 
             <div class="modal-body">
-                <div class="modal-left">
-                    <img id="modalImage" src="" alt="Preview" />
-                </div>
+                <!-- Top Section: Visual and Metadata -->
+                <div class="modal-header-section">
+                    <div class="modal-left">
+                        <img id="modalImage" src="" alt="Preview" />
+                    </div>
 
-                <div class="modal-right">
-                    <div class="modal-info">
-                        <div class="info-group">
-                            <div id="modalCategory" class="card-category-tag"></div>
-                        </div>
-
-                        <div id="modalVariablesGroup" class="info-group"
-                            style="display: none; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-                            <label style="color: var(--accent-banana); margin-bottom: 10px; display: block;">變數替換
-                                (Variables)</label>
-                            <div id="modalVariablesList" style="display: flex; flex-direction: column; gap: 10px;">
+                    <div class="modal-right">
+                        <div class="modal-info" style="gap: 20px;">
+                            <div class="info-group">
+                                <div id="modalCategory" class="card-category-tag"></div>
                             </div>
-                        </div>
 
-                        <div class="info-group">
-                            <div class="info-header">
-                                <button id="modalCopyBtn" class="btn btn-sm" type="button">
-                                    📋 複製
-                                </button>
-                                <button id="modalGenBtn" class="btn btn-guava" type="button">
-                                    🍌 蕉換芭樂
-                                </button>
+                            <div id="modalVariablesGroup" class="info-group"
+                                style="display: none; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                                <label style="color: var(--accent-banana); margin-bottom: 10px; display: block;">變數替換
+                                    (Variables)</label>
+                                <div id="modalVariablesList" style="display: flex; flex-direction: column; gap: 10px;">
+                                </div>
                             </div>
-                            <div id="modalPrompt" class="prompt-display"></div>
-                        </div>
 
-                        <div id="modalNotesGroup" class="info-group" style="display: none;">
-                            <label>使用說明</label>
-                            <div id="modalNotes" class="info-value" style="white-space: pre-wrap;"></div>
-                        </div>
+                            <div id="modalSourceGroup" class="info-group" style="display: none;">
+                                <label>作者 / 來源</label>
+                                <div id="modalSource" class="info-value"></div>
+                            </div>
 
-                        <div id="modalSourceGroup" class="info-group" style="display: none;">
-                            <label>作者 / 來源</label>
-                            <div id="modalSource" class="info-value"></div>
-                        </div>
+                            <div id="modalTagsGroup" class="info-group">
+                                <div id="modalTags" class="tag-list"></div>
+                            </div>
 
-                        <div id="modalTagsGroup" class="info-group">
-                            <div id="modalTags" class="tag-list"></div>
-                        </div>
-
-                        <div class="modal-footer-actions">
-                            <div class="modal-action-buttons" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <div class="modal-action-buttons"
+                                style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: auto;">
                                 <a href="#" id="modalEditBtn" target="_blank" rel="noopener" class="btn btn-outline"
                                     style="flex: 1; min-width: 120px; text-align: center;">
                                     📝 查看
@@ -238,8 +223,30 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
+                <!-- Bottom Section: Prompt and Notes -->
+                <div class="modal-content-section">
+                    <div class="info-group">
+                        <div class="info-header" style="justify-content: space-between;">
+                            <label style="margin-bottom: 0;">提示詞內容 (Prompt Content)</label>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="modalCopyBtn" class="btn btn-sm" type="button">
+                                    📋 複製
+                                </button>
+                                <button id="modalGenBtn" class="btn btn-guava" type="button">
+                                    🍌 蕉換芭樂
+                                </button>
+                            </div>
+                        </div>
+                        <div id="modalPrompt" class="prompt-display" style="max-height: none; overflow: visible;"></div>
+                    </div>
+
+                    <div id="modalNotesGroup" class="info-group" style="margin-top: 30px; display: none;">
+                        <label>使用說明</label>
+                        <div id="modalNotes" class="info-value" style="white-space: pre-wrap;"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
