@@ -183,6 +183,12 @@ select {
     border-color: var(--text-muted);
 }
 
+.btn-sm {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    border-radius: 8px;
+}
+
 .stats-bar {
     margin-bottom: 24px;
     font-size: 0.9rem;
@@ -510,15 +516,41 @@ select {
 }
 
 .btn-guava {
-    background: linear-gradient(135deg, var(--accent-guava) 0%, #16a34a 100%);
-    color: white;
-    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.2);
+    background: transparent;
+    color: var(--accent-guava);
+    border: 1px solid var(--accent-guava);
+    box-shadow: none;
+    font-weight: 700;
 }
 
 .btn-guava:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
-    color: white;
+    background: rgba(34, 197, 94, 0.1);
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+    color: var(--accent-guava);
+}
+
+.info-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 10px;
+}
+
+.info-header .btn {
+    width: 130px;       /* Fixed width for identical size */
+    height: 40px;       /* Fixed height */
+    padding: 0;         /* Clear padding to ensure width is exact */
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.info-header .spacer {
+    display: none; /* No longer needed if full width */
 }
 
 .modal-footer-actions {

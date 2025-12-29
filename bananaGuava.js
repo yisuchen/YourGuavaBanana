@@ -1034,10 +1034,58 @@ function openModal(prompt) {
     const shareLink = document.getElementById('modalShareLink');
     shareLink.className = 'btn btn-guava';
     shareLink.innerHTML = '🍐 分享你的香蕉芭樂';
-    shareLink.href = `https://github.com/${CONFIG.owner}/${CONFIG.repo}/issues/new/choose`;
+    shareLink.href = `https://github.com/${CONFIG.owner}/${CONFIG.repo}/issues/new?template=prompt-submission.yml`;
 
     const editBtn = document.getElementById('modalEditBtn');
     editBtn.href = prompt.url;
+
+    // Generate Button Logic
+    const genBtn = document.getElementById('modalGenBtn');
+    const newGenBtn = genBtn.cloneNode(true);
+    genBtn.parentNode.replaceChild(newGenBtn, genBtn);
+
+    newGenBtn.onclick = () => {
+        let finalPrompt = '';
+        modalPrompt.childNodes.forEach(node => {
+            if (node.nodeType === Node.TEXT_NODE) {
+                finalPrompt += node.textContent;
+            } else if (node.classList && node.classList.contains('variable-placeholder')) {
+                const val = node.dataset.value;
+                if (val) {
+                    finalPrompt += val;
+                } else {
+                    finalPrompt += `{{${node.dataset.key}}}`;
+                }
+            }
+        });
+        
+        // Prepend image generation instruction as requested
+        const imageGenPrompt = `Generate an image: ${finalPrompt}`;
+        
+        // ChatGPTToolkitLinkBuilder URL Construction
+        const b64EncodeUnicode = (str) => {
+            return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+                function toSolidBytes(match, p1) {
+                    return String.fromCharCode('0x' + p1);
+            }));
+        };
+
+        let payload = imageGenPrompt;
+        if (payload.length >= 64) {
+            payload = b64EncodeUnicode(payload);
+        }
+        
+        const encodedPrompt = encodeURIComponent(payload);
+        const toolkitUrl = `https://gemini.google.com/app#tool=image&autoSubmit=true&pasteImage=false&prompt=${encodedPrompt}`;
+
+        // Copy to clipboard
+        navigator.clipboard.writeText(imageGenPrompt).then(() => {
+            window.open(toolkitUrl, '_blank');
+        }).catch(err => {
+            console.error('Copy failed, opening URL anyway:', err);
+            window.open(toolkitUrl, '_blank');
+        });
+    };
 
     // Copy Button Logic
     const copyBtn = document.getElementById('modalCopyBtn');
