@@ -1082,18 +1082,36 @@ function openModal(prompt) {
     parts.forEach(part => {
         const match = part.match(/{{(.*?)}}/);
         if (match) {
-            const rawKey = match[1].trim();
+            const contentInside = match[1].trim();
+            let key = contentInside;
+            let defaultValue = '';
+
+            // Check for default value separator ':'
+            const separatorIndex = contentInside.indexOf(':');
+            if (separatorIndex !== -1) {
+                key = contentInside.substring(0, separatorIndex).trim();
+                defaultValue = contentInside.substring(separatorIndex + 1).trim();
+            }
+
             // Create interactive span
             const span = document.createElement('span');
             span.className = 'variable-placeholder';
-            span.textContent = rawKey; // Initial text is the key
-            span.dataset.key = rawKey;
-            span.dataset.value = ''; // Currently no value selected
+            
+            if (defaultValue) {
+                span.textContent = defaultValue;
+                span.dataset.value = defaultValue;
+                span.classList.add('filled');
+            } else {
+                span.textContent = key; // Initial text is the key
+                span.dataset.value = ''; // Currently no value selected
+            }
+            
+            span.dataset.key = key;
             
             // Add click handler for popover
             span.onclick = (e) => {
                 e.stopPropagation(); // Prevent closing modal
-                showVariablePopover(span, rawKey, prompt.localVariables);
+                showVariablePopover(span, key, prompt.localVariables);
             };
             
             modalPrompt.appendChild(span);
@@ -1418,21 +1436,46 @@ function showVariablePopover(targetSpan, rawKey, localVariables = {}) {
         });
     }
 
+    // Append to body but keep invisible for measurement
+    popover.style.visibility = 'hidden';
+    popover.style.position = 'fixed'; // Use fixed positioning
     document.body.appendChild(popover);
     currentPopover = popover;
 
-    // Positioning
+    // Positioning Logic
     const rect = targetSpan.getBoundingClientRect();
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-    
-    popover.style.top = `${rect.bottom + scrollTop + 5}px`;
-    popover.style.left = `${rect.left + scrollLeft}px`;
-    
-    // Adjust if off-screen (simple check)
-    if (rect.left + 200 > window.innerWidth) {
-        popover.style.left = `${window.innerWidth - 220}px`;
+    const popoverRect = popover.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    let top = rect.bottom + 5;
+    let left = rect.left;
+
+    // Vertical Adjustment: Flip to top if not enough space below
+    // Check if bottom of popover goes beyond viewport
+    if (top + popoverRect.height > viewportHeight - 10) {
+        // Check if there is space above
+        if (rect.top - popoverRect.height - 10 > 0) {
+            top = rect.top - popoverRect.height - 5;
+        } else {
+            // If tight on both sides, prefer aligning to bottom of viewport
+            top = viewportHeight - popoverRect.height - 10;
+        }
     }
+
+    // Horizontal Adjustment
+    if (left + popoverRect.width > viewportWidth - 10) {
+        left = viewportWidth - popoverRect.width - 10;
+    }
+    
+    // Ensure left is not negative
+    if (left < 10) left = 10;
+
+    popover.style.top = `${top}px`;
+    popover.style.left = `${left}px`;
+    
+    // Make visible
+    popover.style.visibility = 'visible';
 }
 
 function closePopover() {
@@ -1491,7 +1534,11 @@ function syncVariablesWithPrompt() {
     const matches = [...promptText.matchAll(/{{(.*?)}}/g)];
     const uniqueKeys = new Set();
     matches.forEach(m => {
-        const key = m[1].trim();
+        let key = m[1].trim();
+        // Handle default value syntax {{key:default}}
+        if (key.includes(':')) {
+            key = key.split(':')[0].trim();
+        }
         if (key) uniqueKeys.add(key);
     });
 
