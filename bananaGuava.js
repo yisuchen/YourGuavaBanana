@@ -15,6 +15,7 @@ let state = {
     tags: new Set(),
     variables: {},
     editingPrompt: null, // Tracks the prompt currently being edited
+    isConfirmingUpdate: false, // Tracks if we are waiting for password modal
     filters: {
         search: '',
         category: 'All', // 'All' or specific category name
@@ -581,6 +582,11 @@ function setupEventListeners() {
         document.getElementById('submitAnonBtn').innerHTML = '🚀 匿名投稿';
         document.getElementById('anonSubmissionForm').reset();
         
+        // Show password field
+        const passwordField = document.getElementById('formPassword').parentElement;
+        if (passwordField) passwordField.style.display = 'block';
+        document.getElementById('formPassword').required = true;
+
         // Populate Categories
         const select = document.getElementById('formCategorySelect');
         // Keep the first default option
@@ -625,12 +631,14 @@ function setupEventListeners() {
         const pwd = verifyPasswordInput.value;
         if (!pwd) return alert('請輸入密碼');
         
-        // Set the password into the main form
+        // Set the password into the hidden/main form field
         document.getElementById('formPassword').value = pwd;
         passwordModal.style.display = 'none';
         
-        // Open edit form
-        openEditForm();
+        if (state.isConfirmingUpdate) {
+            state.isConfirmingUpdate = false;
+            handleAnonSubmission(); // Resume submission
+        }
     };
 
     // Global click to close modals
@@ -917,6 +925,14 @@ async function handleAnonSubmission() {
         image: null
     };
 
+    if (isUpdate && !data.password) {
+        // Show password modal for confirmation
+        state.isConfirmingUpdate = true;
+        document.getElementById('verifyPasswordInput').value = '';
+        document.getElementById('passwordModal').style.display = 'block';
+        return; // Wait for password modal
+    }
+
     if (isUpdate) {
         data.number = state.editingPrompt.number;
         data.existingImageUrl = state.editingPrompt.imageUrl;
@@ -1151,8 +1167,7 @@ function openModal(prompt) {
     const anonEditBtn = document.getElementById('modalAnonEditBtn');
     anonEditBtn.onclick = () => {
         state.editingPrompt = prompt;
-        document.getElementById('verifyPasswordInput').value = '';
-        document.getElementById('passwordModal').style.display = 'block';
+        openEditForm();
     };
 
     // Generate Button Logic
@@ -1252,6 +1267,11 @@ function openEditForm() {
     // Set button text
     document.getElementById('submitAnonBtn').innerHTML = '💾 更新投稿';
 
+    // Hide password field in the form during update (we'll use modal at the end)
+    const passwordField = document.getElementById('formPassword').parentElement;
+    if (passwordField) passwordField.style.display = 'none';
+    document.getElementById('formPassword').required = false;
+
     // Pre-fill fields
     document.getElementById('formTitle').value = prompt.displayTitle;
     document.getElementById('formPrompt').value = prompt.promptText;
@@ -1271,7 +1291,7 @@ function openEditForm() {
     });
     
     // Handle "Other" if category not in list
-    if (!Array.from(state.categories).has(prompt.category) && prompt.category !== '未分類') {
+    if (!state.categories.has(prompt.category) && prompt.category !== '未分類') {
         const otherOption = document.createElement('option');
         otherOption.value = prompt.category;
         otherOption.textContent = `${prompt.category} (現有)`;
