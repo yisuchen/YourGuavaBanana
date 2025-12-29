@@ -1,4 +1,4 @@
-1. 匿名投稿的可以修改
-2. 可以複製後, 直接到 gemini 網頁產圖
+ok 1. 匿名投稿的可以修改
+ok 2. 可以複製後, 直接到 gemini 網頁產圖
 3. 有 default 的變數, 然後再跟 issue 的變數融合, 避免一些變數本來有, 被移除掉
-4. preview , and accepted card
+ok 4. preview , and accepted card
