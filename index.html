@@ -33,6 +33,14 @@
             </div>
 
             <div class="filters">
+                <div class="toggle-container">
+                    <label class="switch">
+                        <input type="checkbox" id="previewToggle">
+                        <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-label">顯示預覽 (Pending)</span>
+                </div>
+
                 <select id="tagFilter">
                     <option value="">所有標籤</option>
                 </select>
@@ -79,7 +87,8 @@
                 <div style="display: flex; flex-direction: column; gap: 15px;">
                     <a href="https://github.com/yisuchen/YourGuavaBanana/issues/new/choose" target="_blank"
                         class="btn btn-primary" style="width: 100%;">
-                        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" width="20" height="20" style="filter: invert(1); margin-right: 8px;">
+                        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" width="20"
+                            height="20" style="filter: invert(1); margin-right: 8px;">
                         使用 GitHub 帳號投稿 (推薦)
                     </a>
                     <button id="openAnonForm" class="btn btn-guava" style="width: 100%;">
@@ -104,17 +113,20 @@
                     </div>
                     <div class="form-group" style="margin-bottom: 15px; position: relative;">
                         <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">提示詞內容 *</label>
-                        <textarea id="formPrompt" required rows="5" placeholder="請貼上您的提示詞內容。&#10;可以使用 {{變數}} 建立可替換欄位，例如：請幫我寫一篇關於 {{area}} 的旅遊介紹。&#10;並在下方「變數設定」區域新增變數及其選項。"
+                        <textarea id="formPrompt" required rows="5"
+                            placeholder="請貼上您的提示詞內容。&#10;可以使用 {{變數}} 建立可替換欄位，例如：請幫我寫一篇關於 {{area}} 的旅遊介紹。&#10;並在下方「變數設定」區域新增變數及其選項。"
                             style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white; font-family: monospace;"></textarea>
                         <div id="varSuggestions" class="suggestions-dropdown" style="display: none;"></div>
                     </div>
 
                     <div class="form-group" style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">變數選項設定 (Variables)</label>
+                        <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">變數選項設定
+                            (Variables)</label>
                         <p style="font-size: 0.8em; color: var(--text-muted); margin-bottom: 8px;">
                             系統會自動偵測提示詞中的 {{變數}}。請在下方為偵測到的變數加入選項 (輸入文字後按 Enter 新增)。
                         </p>
-                        <div id="varsBuilderContainer" style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px;"></div>
+                        <div id="varsBuilderContainer"
+                            style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px;"></div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
@@ -127,7 +139,8 @@
                         </div>
                         <div class="form-group">
                             <label style="display: block; margin-bottom: 5px; color: var(--accent-banana);">標籤</label>
-                            <div id="formTagsContainer" style="display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; min-height: 42px;">
+                            <div id="formTagsContainer"
+                                style="display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; min-height: 42px;">
                                 <input type="text" id="formTagsInput" placeholder="輸入後按 Enter 新增"
                                     style="flex: 1; min-width: 120px; background: transparent; border: none; color: white; outline: none; padding: 2px 0;">
                             </div>
@@ -155,7 +168,7 @@
                         <textarea id="formSource" rows="1" placeholder="可選填，例如：@yisuchen 或 原始網址"
                             style="width: 100%; padding: 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: white;"></textarea>
                     </div>
-                    
+
                     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                         <button type="submit" id="submitAnonBtn" class="btn btn-guava" style="flex: 1;">
                             🚀 匿名投稿
@@ -183,9 +196,12 @@
                             <div id="modalCategory" class="card-category-tag"></div>
                         </div>
 
-                        <div id="modalVariablesGroup" class="info-group" style="display: none; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-                            <label style="color: var(--accent-banana); margin-bottom: 10px; display: block;">變數替換 (Variables)</label>
-                            <div id="modalVariablesList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                        <div id="modalVariablesGroup" class="info-group"
+                            style="display: none; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                            <label style="color: var(--accent-banana); margin-bottom: 10px; display: block;">變數替換
+                                (Variables)</label>
+                            <div id="modalVariablesList" style="display: flex; flex-direction: column; gap: 10px;">
+                            </div>
                         </div>
 
                         <div class="info-group">
@@ -220,9 +236,9 @@
                                     style="flex: 1; min-width: 120px; text-align: center;">
                                     📝 查看 / 編輯
                                 </a>
-                                <a href="#" id="modalShareLink" target="_blank" rel="noopener" class="btn btn-banana"
+                                <a href="#" id="modalShareLink" target="_blank" rel="noopener" class="btn btn-outline"
                                     style="flex: 2; min-width: 200px;">
-                                    🍌 分享你的香蕉拔辣 (投稿新提示詞)
+                                    🍌 投稿你的香蕉拔辣
                                 </a>
                             </div>
                         </div>

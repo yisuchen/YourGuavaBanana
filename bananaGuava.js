@@ -9,6 +9,7 @@ const CONFIG = {
 // Application State
 let state = {
     allPrompts: [],
+    previewPrompts: [],
     filteredPrompts: [],
     categories: new Set(),
     tags: new Set(),
@@ -16,7 +17,8 @@ let state = {
     filters: {
         search: '',
         category: 'All', // 'All' or specific category name
-        tag: ''
+        tag: '',
+        showPreview: false
     },
     pagination: {
         currentPage: 1,
@@ -31,15 +33,23 @@ async function init() {
     if (itemsPerPageSelect) {
         itemsPerPageSelect.value = state.pagination.itemsPerPage;
     }
+
+    const previewToggle = document.getElementById('previewToggle');
+    if (previewToggle) {
+        previewToggle.checked = state.filters.showPreview;
+    }
+
     await fetchPrompts();
 }
 
 async function fetchPrompts() {
     const { owner, repo, label, per_page } = CONFIG;
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/issues?state=open&labels=${label}&per_page=${per_page}`;
+    const previewApiUrl = `https://api.github.com/repos/${owner}/${repo}/issues?state=open&labels=pending&per_page=${per_page}`;
 
     try {
         let data;
+        let previewData;
 
         // Try local data.json first
         try {
@@ -50,6 +60,17 @@ async function fetchPrompts() {
             }
         } catch (e) {
             console.log('data.json not found, falling back to API');
+        }
+
+        // Try local data-preview.json
+        try {
+            const previewResponse = await fetch('data-preview.json');
+            if (previewResponse.ok) {
+                previewData = await previewResponse.json();
+                console.log('Loaded from data-preview.json');
+            }
+        } catch (e) {
+            console.log('data-preview.json not found');
         }
 
         // Try local variables.json
@@ -72,10 +93,30 @@ async function fetchPrompts() {
             data = await response.json();
         }
 
-        // Process Data
+        // Process Regular Data
         state.allPrompts = data
             .filter(issue => !issue.pull_request)
-            .map(issue => processIssue(issue));
+            .map(issue => ({ ...processIssue(issue), isPreview: false }));
+
+        // Process Preview Data
+        if (previewData || !data) {
+            if (!previewData) {
+                try {
+                    const response = await fetch(previewApiUrl);
+                    if (response.ok) {
+                        previewData = await response.json();
+                    }
+                } catch (e) {
+                    console.error('Failed to fetch preview from API', e);
+                }
+            }
+
+            if (previewData) {
+                state.previewPrompts = previewData
+                    .filter(issue => !issue.pull_request)
+                    .map(issue => ({ ...processIssue(issue), isPreview: true }));
+            }
+        }
         
         // Extract unique Categories and Tags
         extractMetadata();
@@ -159,15 +200,18 @@ function extractMetadata() {
     state.categories = new Set();
     state.tags = new Set();
 
+    // Use all available prompts for metadata to keep filters consistent
+    const combined = [...state.allPrompts, ...state.previewPrompts];
+
     // First pass: collect all categories
-    state.allPrompts.forEach(p => {
+    combined.forEach(p => {
         if (p.category) {
             state.categories.add(p.category);
         }
     });
 
     // Second pass: collect tags that are not categories to keep them distinct
-    state.allPrompts.forEach(p => {
+    combined.forEach(p => {
         p.computedTags.forEach(t => {
             if (!state.categories.has(t)) {
                 state.tags.add(t);
@@ -177,10 +221,15 @@ function extractMetadata() {
 }
 
 function applyFilters() {
-    const { search, category, tag } = state.filters;
+    const { search, category, tag, showPreview } = state.filters;
     const term = search.toLowerCase();
 
-    state.filteredPrompts = state.allPrompts.filter(p => {
+    // Select data based on preview toggle
+    const sourceData = showPreview 
+        ? state.previewPrompts
+        : state.allPrompts;
+
+    state.filteredPrompts = sourceData.filter(p => {
         // 1. Category Filter
         if (category !== 'All' && p.category !== category) {
             return false;
@@ -204,6 +253,9 @@ function applyFilters() {
 
         return true;
     });
+
+    // Sort: Global number descending (newest first)
+    state.filteredPrompts.sort((a, b) => b.number - a.number);
 
     // Reset to page 1 when filters change
     state.pagination.currentPage = 1;
@@ -378,7 +430,7 @@ function renderCards(prompts) {
 
     prompts.forEach(prompt => {
         const card = document.createElement('div');
-        card.className = 'card';
+        card.className = `card ${prompt.isPreview ? 'is-preview' : ''}`;
 
         // Tags to show on card (exclude all categories)
         const displayTags = prompt.computedTags
@@ -404,7 +456,10 @@ function renderCards(prompts) {
             imageHtml = `<img src="${optimizedUrl}" alt="${escapeHtml(prompt.displayTitle)}" loading="lazy" decoding="async">`;
         }
 
+        const previewBadge = prompt.isPreview ? '<div class="preview-badge">Preview</div>' : '';
+
         card.innerHTML = `
+            ${previewBadge}
             <div class="card-image">${imageHtml}</div>
             <div class="card-body">
                 <div class="card-category-tag">${escapeHtml(prompt.category)}</div>
@@ -485,6 +540,11 @@ function setupEventListeners() {
         state.pagination.itemsPerPage = parseInt(e.target.value);
         state.pagination.currentPage = 1; // Reset to first page
         renderPage();
+    });
+
+    document.getElementById('previewToggle').addEventListener('change', (e) => {
+        state.filters.showPreview = e.target.checked;
+        applyFilters();
     });
 
     // --- Modal events ---
@@ -1032,9 +1092,18 @@ function openModal(prompt) {
 
     // Buttons
     const shareLink = document.getElementById('modalShareLink');
-    shareLink.className = 'btn btn-guava';
-    shareLink.innerHTML = '🍐 分享你的香蕉芭樂';
-    shareLink.href = `https://github.com/${CONFIG.owner}/${CONFIG.repo}/issues/new?template=prompt-submission.yml`;
+    shareLink.className = 'btn btn-outline';
+    shareLink.innerHTML = '🍌 投稿你的香蕉拔辣';
+    shareLink.href = '#'; // Don't follow link
+    shareLink.onclick = (e) => {
+        e.preventDefault();
+        closeModal(); // Close detail modal
+        
+        // Open choice modal (or directly open anon form as per user preference)
+        // Let's directly open the anon form since the text says "投稿你的香蕉拔辣"
+        const openAnonFormBtn = document.getElementById('openAnonForm');
+        if (openAnonFormBtn) openAnonFormBtn.click();
+    };
 
     const editBtn = document.getElementById('modalEditBtn');
     editBtn.href = prompt.url;

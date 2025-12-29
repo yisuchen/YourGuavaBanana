@@ -22,6 +22,17 @@ else
     exit 1
 fi
 
+# 2.1 抓取 Pending Issues
+echo "📥 正在從 GitHub 抓取預覽資料至 data-preview.json..."
+gh issue list --label "pending" --state open --limit 100 --json title,body,labels,url,number > data-preview.json
+
+if [ $? -eq 0 ]; then
+    echo "✅ 成功更新 data-preview.json"
+else
+    echo "❌ 抓取預覽資料失敗。"
+    exit 1
+fi
+
 # 3. 執行產出變數腳本
 echo "⚙️ 正在根據新資料產生 variables.json..."
 node .github/scripts/generate_vars.js

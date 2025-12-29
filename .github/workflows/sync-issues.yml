@@ -32,7 +32,9 @@ jobs:
           set -euxo pipefail
           gh issue list --repo "${{ github.repository }}" --label "accepted" --state open --limit 100 \
             --json title,body,labels,url,number > data.json
-          ls -la data.json
+          gh issue list --repo "${{ github.repository }}" --label "pending" --state open --limit 100 \
+            --json title,body,labels,url,number > data-preview.json
+          ls -la data.json data-preview.json
           node .github/scripts/generate_vars.js
           ls -la variables.json
 
@@ -45,11 +47,11 @@ jobs:
           echo "== git status =="
           git status --porcelain
 
-          git add data.json variables.json
+          git add data.json data-preview.json variables.json
 
           echo "== staged diff =="
           git diff --staged --name-only
-          git diff --staged --quiet || git commit -m "chore: sync issues to data.json"
+          git diff --staged --quiet || git commit -m "chore: sync issues to data.json and data-preview.json"
 
           echo "== pushing to =="
           git remote -v
