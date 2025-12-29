@@ -3,6 +3,7 @@ const path = require('path');
 
 const DATA_PATH = path.join(process.cwd(), 'data.json');
 const VARS_OUTPUT_PATH = path.join(process.cwd(), 'variables.json');
+const DEFAULT_VARS_PATH = path.join(process.cwd(), 'default_variables.json');
 
 function main() {
   if (!fs.existsSync(DATA_PATH)) {
@@ -21,6 +22,34 @@ function main() {
 
   // Map<string, Set<string>>
   const variablesMap = new Map();
+
+  // 1. Load Default Variables
+  if (fs.existsSync(DEFAULT_VARS_PATH)) {
+    try {
+      const defaultContent = fs.readFileSync(DEFAULT_VARS_PATH, 'utf-8');
+      const defaultVars = JSON.parse(defaultContent);
+      
+      Object.keys(defaultVars).forEach(rawKey => {
+        const key = normalizeKey(rawKey);
+        if (!key) return;
+        
+        if (!variablesMap.has(key)) {
+          variablesMap.set(key, new Set());
+        }
+        const set = variablesMap.get(key);
+        
+        const values = defaultVars[rawKey];
+        if (Array.isArray(values)) {
+          values.forEach(v => set.add(v));
+        }
+      });
+      console.log(`Loaded default variables from ${DEFAULT_VARS_PATH}`);
+    } catch (e) {
+      console.error('Error parsing default_variables.json:', e);
+      // We continue even if default vars fail, or should we exit? 
+      // Let's just log error and continue.
+    }
+  }
 
   issues.forEach(issue => {
     const body = issue.body || '';
