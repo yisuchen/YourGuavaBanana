@@ -25,18 +25,13 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Fetch Issues
+      - name: Fetch and Sync Data
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -euxo pipefail
-          gh issue list --repo "${{ github.repository }}" --label "accepted" --state open --limit 100 \
-            --json title,body,labels,url,number > data.json
-          gh issue list --repo "${{ github.repository }}" --label "pending" --state open --limit 100 \
-            --json title,body,labels,url,number > data-preview.json
-          ls -la data.json data-preview.json
-          node .github/scripts/generate_vars.js
-          ls -la variables.json
+          chmod +x sync_data.sh
+          ./sync_data.sh
+          ls -la data.json data-preview.json variables.json
 
       - name: Commit and Push
         run: |

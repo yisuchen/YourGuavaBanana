@@ -11,25 +11,11 @@ if ! command -v gh > /dev/null 2>&1; then
     exit 1
 fi
 
-# 2. 抓取最新的 Issues
-echo "📥 正在從 GitHub 抓取資料至 data.json..."
-gh issue list --label "accepted" --state open --limit 100 --json title,body,labels,url,number > data.json
+# 2. 抓取 GitHub 資料 (雲端與本地共用邏輯)
+node .github/scripts/fetch_data.js
 
-if [ $? -eq 0 ]; then
-    echo "✅ 成功更新 data.json"
-else
+if [ $? -ne 0 ]; then
     echo "❌ 抓取資料失敗。"
-    exit 1
-fi
-
-# 2.1 抓取 Pending Issues
-echo "📥 正在從 GitHub 抓取預覽資料至 data-preview.json..."
-gh issue list --label "pending" --state open --limit 100 --json title,body,labels,url,number > data-preview.json
-
-if [ $? -eq 0 ]; then
-    echo "✅ 成功更新 data-preview.json"
-else
-    echo "❌ 抓取預覽資料失敗。"
     exit 1
 fi
 
