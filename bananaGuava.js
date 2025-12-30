@@ -515,6 +515,10 @@ function renderCards(prompts) {
             .map(tag => `<span class="hashtag">#${escapeHtml(tag)}</span>`)
             .join(' ');
 
+        const tagsSection = displayTags.length > 0 
+            ? `<div class="card-tags">${tagsHtml}</div>` 
+            : '';
+
         const rawContent = prompt.promptText !== null ? prompt.promptText : prompt.body;
         const contentToDisplay = rawContent.length > 100 ? rawContent.substring(0, 100) + '...' : rawContent;
 
@@ -539,7 +543,7 @@ function renderCards(prompts) {
                 <div class="card-category-tag">${escapeHtml(prompt.category)}</div>
                 <h3 class="card-title">${escapeHtml(prompt.displayTitle)}</h3>
                 <div class="card-content">${escapeHtml(contentToDisplay)}</div>
-                <div class="card-tags">${tagsHtml}</div>
+                ${tagsSection}
             </div>
         `;
 
@@ -585,7 +589,8 @@ function extractSection(body, headingText) {
 
     if (!found) return null;
     const result = content.join('\n').trim();
-    if (result.toLowerCase() === '_no response_') return "";
+    const lowerResult = result.toLowerCase();
+    if (lowerResult === '_no response_' || lowerResult === 'no response') return "";
     return result;
 }
 
