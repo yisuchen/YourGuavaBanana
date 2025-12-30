@@ -57,10 +57,10 @@ async function init() {
 
 function populateCategoryDropdown(selectElement, selectedValue = '') {
     if (!selectElement) return;
-    
+
     // Keep the first default option
     selectElement.innerHTML = '<option value="">請選擇分類...</option>';
-    
+
     // Use ONLY fixed categories as requested
     FIXED_CATEGORIES.forEach(cat => {
         const option = document.createElement('option');
@@ -78,11 +78,11 @@ function openAnonFormLogic() {
     state.editingPrompt = null; // Clear edit state
     document.getElementById('submitAnonBtn').innerHTML = '🚀 匿名投稿';
     document.getElementById('anonSubmissionForm').reset();
-    
+
     // Show password field
     const passwordField = document.getElementById('formPassword').parentElement;
     if (passwordField) passwordField.style.display = 'block';
-    document.getElementById('formPassword').required = true;
+    document.getElementById('formPassword').required = false;
 
     // Populate Categories
     const select = document.getElementById('formCategorySelect');
@@ -195,7 +195,7 @@ async function fetchPrompts() {
                     .map(issue => ({ ...processIssue(issue), isPreview: true }));
             }
         }
-        
+
         // Extract unique Categories and Tags
         extractMetadata();
 
@@ -304,7 +304,7 @@ function applyFilters() {
     const term = search.toLowerCase();
 
     // Select data based on preview toggle
-    const sourceData = showPreview 
+    const sourceData = showPreview
         ? state.previewPrompts
         : state.allPrompts;
 
@@ -313,9 +313,9 @@ function applyFilters() {
         if (category !== 'All' && p.category !== category) {
             // Special case: if filtering for '其他（待歸納）', also show items that don't match any fixed category
             if (category === '其他（待歸納）') {
-               if (FIXED_CATEGORIES.includes(p.category)) return false;
+                if (FIXED_CATEGORIES.includes(p.category)) return false;
             } else {
-               return false;
+                return false;
             }
         }
 
@@ -342,13 +342,13 @@ function applyFilters() {
 function renderStats(start, end, total) {
     const statsEl = document.getElementById('statsText');
     if (!statsEl) return;
-    
+
     // Check if first argument is a string (error message)
     if (typeof start === 'string') {
         statsEl.textContent = start;
         return;
     }
-    
+
     if (total === 0) {
         statsEl.textContent = '找不到符合條件的提示詞';
     } else {
@@ -359,7 +359,7 @@ function renderStats(start, end, total) {
 function renderPage() {
     const { currentPage, itemsPerPage } = state.pagination;
     const totalItems = state.filteredPrompts.length;
-    
+
     if (totalItems === 0) {
         renderCards([]);
         renderPagination(0);
@@ -369,9 +369,9 @@ function renderPage() {
 
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-    
+
     const promptsToShow = state.filteredPrompts.slice(startIndex, endIndex);
-    
+
     renderCards(promptsToShow);
     renderPagination(totalItems);
     renderStats(startIndex + 1, endIndex, totalItems);
@@ -422,9 +422,9 @@ function updateTagFilterDropdown() {
 function renderPagination(totalItems) {
     const container = document.getElementById('pagination');
     container.innerHTML = '';
-    
+
     const totalPages = Math.ceil(totalItems / state.pagination.itemsPerPage);
-    
+
     if (totalPages <= 1) return;
 
     // Previous Button
@@ -438,7 +438,7 @@ function renderPagination(totalItems) {
     // Page Numbers logic
     let startPage = Math.max(1, state.pagination.currentPage - 2);
     let endPage = Math.min(totalPages, startPage + 4);
-    
+
     if (endPage - startPage < 4) {
         startPage = Math.max(1, endPage - 4);
     }
@@ -520,7 +520,7 @@ function renderCards(prompts) {
 
         // Image optimization: Use wsrv.nl for on-the-fly resizing and webp conversion
         let imageHtml = '<div class="placeholder">No Preview</div>';
-        
+
         if (prompt.imageUrl) {
             // Encode the original URL for the proxy service
             // w=400: Resize width to 400px (sufficient for cards)
@@ -622,7 +622,7 @@ function setupEventListeners() {
     });
 
     // --- Modal events ---
-    
+
     // Main Prompt Detail Modal
     const modal = document.getElementById('promptModal');
     const closeBtn = modal.querySelector('.close-button');
@@ -657,11 +657,11 @@ function setupEventListeners() {
     confirmPasswordBtn.onclick = () => {
         const pwd = verifyPasswordInput.value;
         if (!pwd) return alert('請輸入密碼');
-        
+
         // Set the password into the hidden/main form field
         document.getElementById('formPassword').value = pwd;
         passwordModal.style.display = 'none';
-        
+
         if (state.isConfirmingUpdate) {
             state.isConfirmingUpdate = false;
             handleAnonSubmission(); // Resume submission
@@ -717,10 +717,10 @@ function setupEventListeners() {
         tag.style.borderRadius = '12px';
         tag.style.fontSize = '0.85rem';
         tag.style.gap = '6px';
-        
+
         const textSpan = document.createElement('span');
         textSpan.textContent = text;
-        
+
         const removeBtn = document.createElement('span');
         removeBtn.textContent = '×';
         removeBtn.style.cursor = 'pointer';
@@ -733,7 +733,7 @@ function setupEventListeners() {
 
         tag.appendChild(textSpan);
         tag.appendChild(removeBtn);
-        
+
         // Insert before the input
         container.insertBefore(tag, inputElement);
     }
@@ -776,11 +776,11 @@ function setupEventListeners() {
         const cursorSettings = getCursorXY(formPrompt, formPrompt.selectionStart);
         const text = formPrompt.value;
         const cursorPos = formPrompt.selectionStart;
-        
+
         // Find if we are currently inside a {{ }} tag
         const lastBraces = text.lastIndexOf('{{', cursorPos - 1);
         const lastClosing = text.lastIndexOf('}}', cursorPos - 1);
-        
+
         if (lastBraces !== -1 && lastBraces > lastClosing) {
             const rawContent = text.substring(lastBraces + 2, cursorPos);
             const separatorIdx = rawContent.indexOf(':');
@@ -805,7 +805,7 @@ function setupEventListeners() {
     formPrompt.addEventListener('keydown', (e) => {
         if (suggestionsEl.style.display === 'block') {
             const items = suggestionsEl.querySelectorAll('.suggestion-item');
-            
+
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 selectedSuggestionIndex = (selectedSuggestionIndex + 1) % items.length;
@@ -830,7 +830,7 @@ function setupEventListeners() {
 
     function showSuggestions(mode, query, coords, contextKey = null) {
         let list = [];
-        
+
         if (mode === 'key') {
             const keys = Object.keys(state.variables || {});
             list = keys.filter(k => k.toLowerCase().includes(query));
@@ -848,7 +848,7 @@ function setupEventListeners() {
         if (list.length > 0 || showCustom) {
             renderSuggestions(list, mode, contextKey, query, showCustom);
             suggestionsEl.style.display = 'block';
-            
+
             // Adjust position
             const offsetX = (mode === 'value') ? 10 : 0;
             suggestionsEl.style.left = `${coords.x + offsetX}px`;
@@ -867,7 +867,7 @@ function setupEventListeners() {
             customItem.className = 'suggestion-item custom-add';
             customItem.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
             customItem.style.color = 'var(--accent-guava)';
-            
+
             if (query.length > 0) {
                 customItem.innerHTML = `✨ 使用自訂: <span style="color:#fff;font-weight:bold;">${escapeHtml(query)}</span>`;
             } else {
@@ -917,24 +917,24 @@ function setupEventListeners() {
         const fullText = formPrompt.value;
         const cursorPos = formPrompt.selectionStart;
         const lastBraces = fullText.lastIndexOf('{{', cursorPos - 1);
-        
+
         let before, after, replacement;
-        
+
         if (mode === 'key') {
             before = fullText.substring(0, lastBraces);
             after = fullText.substring(cursorPos);
-            
-            const hasValues = (state.variables[textToInsert] && state.variables[textToInsert].length > 0) || 
-                             (state.variables[textToInsert.toLowerCase()] && state.variables[textToInsert.toLowerCase()].length > 0);
-            
+
+            const hasValues = (state.variables[textToInsert] && state.variables[textToInsert].length > 0) ||
+                (state.variables[textToInsert.toLowerCase()] && state.variables[textToInsert.toLowerCase()].length > 0);
+
             const hasClosing = after.trim().startsWith('}}');
-            
+
             if (hasValues) {
                 replacement = `{{${textToInsert}:`;
             } else {
                 replacement = `{{${textToInsert}${hasClosing ? '' : '}}'}`;
             }
-            
+
             if (!hasValues && hasClosing) {
                 after = after.substring(after.indexOf('}}') + 2);
             }
@@ -954,18 +954,18 @@ function setupEventListeners() {
             // Inserting Value
             const rawContent = fullText.substring(lastBraces, cursorPos);
             const colonIdx = rawContent.indexOf(':');
-            
+
             if (colonIdx === -1) {
                 before = fullText.substring(0, cursorPos);
                 after = fullText.substring(cursorPos);
                 replacement = `:${textToInsert}}}`;
             } else {
-                before = fullText.substring(0, lastBraces + colonIdx + 1); 
+                before = fullText.substring(0, lastBraces + colonIdx + 1);
                 after = fullText.substring(cursorPos);
-                
+
                 const hasClosing = after.trim().startsWith('}}');
                 replacement = `${textToInsert}}}`; // Always include closing braces in replacement
-                
+
                 if (hasClosing) {
                     // Skip existing closing braces in 'after'
                     after = after.substring(after.indexOf('}}') + 2);
@@ -974,7 +974,7 @@ function setupEventListeners() {
 
             formPrompt.value = before + replacement + after;
             formPrompt.focus();
-            
+
             let newPos;
             if (textToInsert === '') {
                 // If custom empty, place cursor inside {{Key:|}}
@@ -985,7 +985,7 @@ function setupEventListeners() {
             }
             formPrompt.setSelectionRange(newPos, newPos);
         }
-        
+
         syncVariablesWithPrompt();
     }
 
@@ -993,13 +993,13 @@ function setupEventListeners() {
     function getCursorXY(textarea, selectionPoint) {
         const div = document.createElement('div');
         const copyStyle = getComputedStyle(textarea);
-        
+
         // Basic styles
         div.style.whiteSpace = 'pre-wrap';
         div.style.wordWrap = 'break-word';
         div.style.position = 'absolute';
         div.style.visibility = 'hidden';
-        
+
         // Copy relevant styles for measuring
         const props = [
             'font-family', 'font-size', 'font-weight', 'font-style', 'font-variant',
@@ -1008,35 +1008,35 @@ function setupEventListeners() {
             'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
             'box-sizing', 'width'
         ];
-        
+
         props.forEach(prop => {
             div.style[prop] = copyStyle.getPropertyValue(prop);
         });
-        
+
         // Special handle for width to match scrollbar behavior
         div.style.width = textarea.clientWidth + 'px';
         div.style.overflow = 'hidden';
-        
+
         document.body.appendChild(div);
-        
+
         // Content up to cursor
         const textContent = textarea.value.substring(0, selectionPoint);
         div.textContent = textContent;
-        
+
         // Marker for cursor position
         const span = document.createElement('span');
         span.textContent = '|';
         div.appendChild(span);
-        
+
         // Calculate relative coordinates
         const relativeTop = span.offsetTop - textarea.scrollTop;
         const relativeLeft = span.offsetLeft - textarea.scrollLeft;
-        
+
         const finalX = textarea.offsetLeft + relativeLeft;
         const finalY = textarea.offsetTop + relativeTop;
-        
+
         document.body.removeChild(div);
-        
+
         return { x: finalX, y: finalY };
     }
 
@@ -1045,7 +1045,7 @@ function setupEventListeners() {
         for (const item of items) {
             if (item.type.indexOf('image') !== -1) {
                 const blob = item.getAsFile();
-                
+
                 if (blob.size > 10 * 1024 * 1024) {
                     alert('貼上的圖片太大囉！請使用較小的圖片 (10MB 以內)。');
                     return;
@@ -1078,7 +1078,7 @@ async function handleAnonSubmission() {
     const statusEl = document.getElementById('submitStatus');
     const imageFileInput = document.getElementById('formImageFile');
     const isUpdate = !!state.editingPrompt;
-    
+
     // Handle Category
     let category = document.getElementById('formCategorySelect').value;
     if (!category) {
@@ -1112,7 +1112,7 @@ async function handleAnonSubmission() {
 
     // Process Image if exists
     let fileToUpload = null;
-    
+
     if (imageFileInput.files && imageFileInput.files[0]) {
         fileToUpload = imageFileInput.files[0];
     } else if (imageFileInput._pastedBlob) {
@@ -1158,10 +1158,10 @@ async function handleAnonSubmission() {
         if (result.success) {
             statusEl.style.color = 'var(--accent-guava)';
             statusEl.textContent = isUpdate ? '✅ 更新成功！即將重新載入頁面。' : '✅ 投稿成功！請等待審核，頁面將於 3 秒後關閉。';
-            
+
             if (!isUpdate) {
                 document.getElementById('anonSubmissionForm').reset();
-                
+
                 // Manually clear dynamic variables container
                 const varsContainer = document.getElementById('varsBuilderContainer');
                 if (varsContainer) {
@@ -1178,7 +1178,7 @@ async function handleAnonSubmission() {
 
                 document.getElementById('formImagePreviewContainer').style.display = 'none';
             }
-            
+
             setTimeout(() => {
                 if (isUpdate) {
                     window.location.reload();
@@ -1217,12 +1217,12 @@ function openModal(prompt) {
     const modal = document.getElementById('promptModal');
     // Use promptText if available, otherwise body
     const rawContent = prompt.promptText !== null ? prompt.promptText : prompt.body;
-    
+
     // Store original content for reference
     modal.dataset.rawContent = rawContent;
 
     const modalImage = document.getElementById('modalImage');
-    
+
     // 1. Reset to Loading state
     modalImage.src = 'https://placehold.co/800x600/1e293b/94a3b8?text=Loading...';
     modalImage.style.cursor = 'wait';
@@ -1231,7 +1231,7 @@ function openModal(prompt) {
 
     if (prompt.imageUrl) {
         const optimizedUrl = `https://wsrv.nl/?url=${encodeURIComponent(prompt.imageUrl)}&w=800&q=85&output=webp`;
-        
+
         const img = new Image();
         img.onload = () => {
             if (document.getElementById('promptModal').style.display === 'block') {
@@ -1247,7 +1247,7 @@ function openModal(prompt) {
         modalImage.style.cursor = 'default';
         modalImage.title = '';
     }
-    
+
     document.getElementById('modalCategory').textContent = prompt.category;
 
     // --- Variables Handling (Inline) ---
@@ -1261,7 +1261,7 @@ function openModal(prompt) {
     // Parse the content and render interactive elements
     // Split by {{...}} capturing the braces and content
     const parts = rawContent.split(/({{[^{}]+}})/g);
-    
+
     parts.forEach(part => {
         const match = part.match(/{{(.*?)}}/);
         if (match) {
@@ -1279,7 +1279,7 @@ function openModal(prompt) {
             // Create interactive span
             const span = document.createElement('span');
             span.className = 'variable-placeholder';
-            
+
             if (defaultValue) {
                 span.textContent = defaultValue;
                 span.dataset.value = defaultValue;
@@ -1288,15 +1288,15 @@ function openModal(prompt) {
                 span.textContent = key; // Initial text is the key
                 span.dataset.value = ''; // Currently no value selected
             }
-            
+
             span.dataset.key = key;
-            
+
             // Add click handler for popover
             span.onclick = (e) => {
                 e.stopPropagation(); // Prevent closing modal
                 showVariablePopover(span, key, prompt.localVariables);
             };
-            
+
             modalPrompt.appendChild(span);
         } else {
             // Regular text node
@@ -1353,7 +1353,7 @@ function openModal(prompt) {
     const anonEditBtn = document.getElementById('modalAnonEditBtn');
     const newAnonEditBtn = anonEditBtn.cloneNode(true);
     anonEditBtn.parentNode.replaceChild(newAnonEditBtn, anonEditBtn);
-    
+
     newAnonEditBtn.onclick = () => {
         state.editingPrompt = prompt;
         openEditForm();
@@ -1378,25 +1378,25 @@ function openModal(prompt) {
                 }
             }
         });
-        
+
         // Prepend image generation instruction as requested
         const imageGenPrompt = `Generate an image: ${finalPrompt}`;
-        
+
         // ChatGPTToolkitLinkBuilder URL Construction
         const b64EncodeUnicode = (str) => {
             return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
                 function toSolidBytes(match, p1) {
                     return String.fromCharCode('0x' + p1);
-            }));
+                }));
         };
 
         let payload = imageGenPrompt;
         if (payload.length >= 64) {
             payload = b64EncodeUnicode(payload);
         }
-        
+
         const encodedPrompt = encodeURIComponent(payload);
-        const toolkitUrl = `https://gemini.google.com/app#tool=image&autoSubmit=true&pasteImage=false&prompt=${encodedPrompt}`;
+        const toolkitUrl = `https://gemini.google.com/app#tool=image&autoSubmit=false&pasteImage=false&prompt=${encodedPrompt}`;
 
         // Copy to clipboard
         navigator.clipboard.writeText(imageGenPrompt).then(() => {
@@ -1451,7 +1451,7 @@ function openEditForm() {
     // Close detail modal and open form modal
     closeModal();
     document.getElementById('submitFormModal').style.display = 'block';
-    
+
     // Set button text
     document.getElementById('submitAnonBtn').innerHTML = '💾 更新投稿';
 
@@ -1464,7 +1464,7 @@ function openEditForm() {
     document.getElementById('formTitle').value = prompt.displayTitle;
     document.getElementById('formPrompt').value = prompt.promptText;
     document.getElementById('formSource').value = prompt.source === 'No response' ? '' : prompt.source;
-    
+
     // Category
     const select = document.getElementById('formCategorySelect');
     populateCategoryDropdown(select, prompt.category);
@@ -1474,7 +1474,7 @@ function openEditForm() {
     const tagsInput = document.getElementById('formTagsInput');
     // Clear existing pills
     Array.from(tagsContainer.querySelectorAll('.var-tag')).forEach(p => tagsContainer.removeChild(p));
-    
+
     if (prompt.customTags && prompt.customTags.length > 0) {
         prompt.customTags.forEach(t => {
             const tag = document.createElement('span');
@@ -1532,12 +1532,12 @@ function showVariablePopover(targetSpan, rawKey, localVariables = {}) {
     }
 
     const key = rawKey.toLowerCase().replace(/\s+/g, '_');
-    
+
     // Find options: prioritize local variables from the issue body
-    let options = (localVariables && (localVariables[key] || localVariables[rawKey.toLowerCase()])) || 
-                  state.variables[key] || 
-                  state.variables[rawKey.toLowerCase()];
-    
+    let options = (localVariables && (localVariables[key] || localVariables[rawKey.toLowerCase()])) ||
+        state.variables[key] ||
+        state.variables[rawKey.toLowerCase()];
+
     // Fallback logic for keys like text_1, text_2 to use base key 'text'
     if (!options) {
         const parts = key.split('_');
@@ -1549,7 +1549,7 @@ function showVariablePopover(targetSpan, rawKey, localVariables = {}) {
 
     const popover = document.createElement('div');
     popover.className = 'variable-popover';
-    
+
     const header = document.createElement('div');
     header.className = 'popover-header';
     header.textContent = `選擇 ${rawKey}`;
@@ -1565,7 +1565,7 @@ function showVariablePopover(targetSpan, rawKey, localVariables = {}) {
     // Always add an option to type manually at the top
     const inputWrapper = document.createElement('div');
     inputWrapper.className = 'popover-input-wrapper';
-    
+
     const input = document.createElement('input');
     input.className = 'popover-input';
     input.placeholder = '自訂...';
@@ -1632,13 +1632,13 @@ function showVariablePopover(targetSpan, rawKey, localVariables = {}) {
     if (left + popoverRect.width > viewportWidth - 10) {
         left = viewportWidth - popoverRect.width - 10;
     }
-    
+
     // Ensure left is not negative
     if (left < 10) left = 10;
 
     popover.style.top = `${top}px`;
     popover.style.left = `${left}px`;
-    
+
     // Make visible
     popover.style.visibility = 'visible';
 }
@@ -1671,7 +1671,7 @@ function closeModal() {
 }
 
 function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function copyToClipboard(btn, text) {
@@ -1693,10 +1693,10 @@ function copyToClipboard(btn, text) {
 function syncVariablesWithPrompt() {
     const promptText = document.getElementById('formPrompt').value;
     const container = document.getElementById('varsBuilderContainer');
-    
+
     // 1. Extract Keys and optional Values: {{key}} or {{key:value}}
     const matches = [...promptText.matchAll(/{{(.*?)}}/g)];
-    const foundVariables = []; 
+    const foundVariables = [];
 
     matches.forEach(m => {
         const content = m[1].trim();
@@ -1740,16 +1740,16 @@ function syncVariablesWithPrompt() {
         const row = Array.from(container.children).find(r => r.dataset.key === key);
         if (row) {
             const tagsContainer = row.querySelector('.tags-container');
-            
+
             // Remove all tags marked as auto
             const autoTags = tagsContainer.querySelectorAll('.var-tag[data-auto="true"]');
             autoTags.forEach(t => tagsContainer.removeChild(t));
-            
+
             // Add current values from prompt as auto tags
             const valuesForThisKey = foundVariables
                 .filter(v => v.key === key && v.defaultValue)
                 .map(v => v.defaultValue);
-            
+
             // Deduplicate across this key's occurrences
             [...new Set(valuesForThisKey)].forEach(val => {
                 addTag(tagsContainer, val, null, true);
@@ -1781,7 +1781,7 @@ function createVariableRow(container, key) {
     label.style.fontWeight = 'bold';
     label.style.color = '#fbbf24'; // Banana
     label.style.fontFamily = 'monospace';
-    
+
     header.appendChild(label);
     row.appendChild(header);
 
@@ -1791,7 +1791,7 @@ function createVariableRow(container, key) {
     tagsContainer.style.display = 'flex';
     tagsContainer.style.flexWrap = 'wrap';
     tagsContainer.style.gap = '6px';
-    
+
     // Input for new options
     const input = document.createElement('input');
     input.placeholder = '輸入選項按 Enter 新增 (如: 台北)';
@@ -1803,7 +1803,7 @@ function createVariableRow(container, key) {
     input.style.color = '#fff';
     input.style.padding = '4px 0';
     input.style.fontSize = '0.9rem';
-    
+
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -1817,7 +1817,7 @@ function createVariableRow(container, key) {
 
     row.appendChild(tagsContainer);
     row.appendChild(input);
-    
+
     container.appendChild(row);
 
     // Auto-populate with existing global options (Initial options are treated as manual/permanent)
@@ -1842,17 +1842,17 @@ function addTag(container, text, inputElement, isAuto = false) {
     // Styling
     tag.style.display = 'inline-flex';
     tag.style.alignItems = 'center';
-    tag.style.background = isAuto ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.3)'; 
+    tag.style.background = isAuto ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.3)';
     tag.style.color = '#4ade80';
     tag.style.padding = '2px 8px';
     tag.style.borderRadius = '12px';
     tag.style.fontSize = '0.85rem';
     tag.style.gap = '6px';
     tag.style.border = isAuto ? '1px dashed rgba(74, 222, 128, 0.5)' : '1px solid transparent';
-    
+
     const textSpan = document.createElement('span');
     textSpan.textContent = text;
-    
+
     const removeBtn = document.createElement('span');
     removeBtn.textContent = '×';
     removeBtn.style.cursor = 'pointer';
@@ -1864,17 +1864,17 @@ function addTag(container, text, inputElement, isAuto = false) {
 
     tag.appendChild(textSpan);
     tag.appendChild(removeBtn);
-    
+
     container.appendChild(tag);
 }
 
 function collectVariables() {
     const container = document.getElementById('varsBuilderContainer');
     if (!container) return "";
-    
+
     const rows = container.children;
     let result = [];
-    
+
     for (let row of rows) {
         const key = row.dataset.key;
         const tagsContainer = row.querySelector('.tags-container');
@@ -1885,7 +1885,7 @@ function collectVariables() {
             }
         }
     }
-    
+
     return result.join('\n');
 }
 
