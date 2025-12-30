@@ -652,6 +652,10 @@ function setupEventListeners() {
 
     closePasswordModal.onclick = () => {
         passwordModal.style.display = 'none';
+        // Only restore if this was the only modal open
+        if (submitFormModal.style.display !== 'block' && modal.style.display !== 'block') {
+            document.body.style.overflow = 'auto';
+        }
     };
 
     confirmPasswordBtn.onclick = () => {
@@ -661,6 +665,10 @@ function setupEventListeners() {
         // Set the password into the hidden/main form field
         document.getElementById('formPassword').value = pwd;
         passwordModal.style.display = 'none';
+        
+        if (submitFormModal.style.display !== 'block' && modal.style.display !== 'block') {
+            document.body.style.overflow = 'auto';
+        }
 
         if (state.isConfirmingUpdate) {
             state.isConfirmingUpdate = false;
@@ -677,6 +685,9 @@ function setupEventListeners() {
         }
         if (event.target == passwordModal) {
             passwordModal.style.display = 'none';
+            if (submitFormModal.style.display !== 'block' && modal.style.display !== 'block') {
+                document.body.style.overflow = 'auto';
+            }
         }
     };
 
@@ -1450,7 +1461,9 @@ function openEditForm() {
 
     // Close detail modal and open form modal
     closeModal();
-    document.getElementById('submitFormModal').style.display = 'block';
+    const submitFormModal = document.getElementById('submitFormModal');
+    submitFormModal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
 
     // Set button text
     document.getElementById('submitAnonBtn').innerHTML = '💾 更新投稿';
