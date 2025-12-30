@@ -113,16 +113,44 @@ async function fetchPrompts() {
             console.log('data-preview.json not found');
         }
 
+        // Load variables from both sources
+        let defaultVars = {};
+        let localVars = {};
+
+        // Try default_variables.json
+        try {
+            const defVarsResponse = await fetch('default_variables.json');
+            if (defVarsResponse.ok) {
+                defaultVars = await defVarsResponse.json();
+                console.log('Loaded from default_variables.json');
+            }
+        } catch (e) {
+            console.log('default_variables.json not found');
+        }
+
         // Try local variables.json
         try {
             const varsResponse = await fetch('variables.json');
             if (varsResponse.ok) {
-                state.variables = await varsResponse.json();
+                localVars = await varsResponse.json();
                 console.log('Loaded from variables.json');
             }
         } catch (e) {
             console.log('variables.json not found or failed to load');
         }
+
+        // Merge variables: defaultVars + localVars
+        state.variables = { ...defaultVars };
+        Object.keys(localVars).forEach(key => {
+            // Normalize key to lower case for comparison if needed, but keeping case sensitive for now based on existing logic
+            // Actually, keys in variables.json might be case sensitive.
+            if (state.variables[key]) {
+                // Merge arrays and deduplicate
+                state.variables[key] = [...new Set([...state.variables[key], ...localVars[key]])];
+            } else {
+                state.variables[key] = localVars[key];
+            }
+        });
 
         // Fallback to API if data not loaded
         if (!data) {
@@ -748,8 +776,21 @@ function setupEventListeners() {
         const lastClosing = text.lastIndexOf('}}', cursorPos - 1);
         
         if (lastBraces !== -1 && lastBraces > lastClosing) {
-            const query = text.substring(lastBraces + 2, cursorPos).trim().toLowerCase();
-            showSuggestions(query, cursorSettings);
+            const rawContent = text.substring(lastBraces + 2, cursorPos);
+            const separatorIdx = rawContent.indexOf(':');
+
+            if (separatorIdx !== -1) {
+                // Value Mode
+                const key = rawContent.substring(0, separatorIdx).trim();
+                const valQuery = rawContent.substring(separatorIdx + 1).trim().toLowerCase();
+                // Normalize key lookup
+                const normalizedKey = Object.keys(state.variables).find(k => k.toLowerCase() === key.toLowerCase()) || key;
+                showSuggestions('value', valQuery, cursorSettings, normalizedKey);
+            } else {
+                // Key Mode
+                const keyQuery = rawContent.trim().toLowerCase();
+                showSuggestions('key', keyQuery, cursorSettings);
+            }
         } else {
             hideSuggestions();
         }
@@ -767,44 +808,83 @@ function setupEventListeners() {
                 e.preventDefault();
                 selectedSuggestionIndex = (selectedSuggestionIndex - 1 + items.length) % items.length;
                 updateActiveSuggestion(items);
-            } else if (e.key === 'Enter' && selectedSuggestionIndex !== -1) {
+            } else if (e.key === 'Enter') {
                 e.preventDefault();
-                items[selectedSuggestionIndex].click();
+                // If something is selected, click it. 
+                // If nothing is selected, click the first item
+                const indexToClick = selectedSuggestionIndex !== -1 ? selectedSuggestionIndex : 0;
+                if (items[indexToClick]) {
+                    items[indexToClick].click();
+                }
             } else if (e.key === 'Escape') {
                 hideSuggestions();
             }
         }
     });
 
-    function showSuggestions(query, coords) {
-        const keys = Object.keys(state.variables || {});
-        const filtered = keys.filter(k => k.includes(query));
+    function showSuggestions(mode, query, coords, contextKey = null) {
+        let list = [];
         
-        if (filtered.length === 0 && query.length === 0) {
-            // Show all keys if query is empty
-            renderSuggestions(keys);
-        } else if (filtered.length > 0) {
-            renderSuggestions(filtered);
-        } else {
-            hideSuggestions();
-            return;
+        if (mode === 'key') {
+            const keys = Object.keys(state.variables || {});
+            list = keys.filter(k => k.toLowerCase().includes(query));
+            if (list.length === 0 && query.length === 0) list = keys;
+        } else if (mode === 'value') {
+            // Look up values for the key
+            const values = state.variables[contextKey] || [];
+            list = values.filter(v => v.toLowerCase().includes(query));
+            if (list.length === 0 && query.length === 0) list = values;
         }
 
-        suggestionsEl.style.display = 'block';
-        // Position it near the cursor
-        suggestionsEl.style.left = `${coords.x}px`;
-        suggestionsEl.style.top = `${coords.y + 20}px`;
+        // Always show custom option in value mode so user can choose to type manually
+        let showCustom = (mode === 'value');
+
+        if (list.length > 0 || showCustom) {
+            renderSuggestions(list, mode, contextKey, query, showCustom);
+            suggestionsEl.style.display = 'block';
+            
+            // Adjust position
+            const offsetX = (mode === 'value') ? 10 : 0;
+            suggestionsEl.style.left = `${coords.x + offsetX}px`;
+            suggestionsEl.style.top = `${coords.y + 24}px`;
+        } else {
+            hideSuggestions();
+        }
     }
 
-    function renderSuggestions(list) {
+    function renderSuggestions(list, mode, contextKey, query, showCustom) {
         suggestionsEl.innerHTML = '';
         selectedSuggestionIndex = -1;
-        list.forEach((key, index) => {
+
+        if (showCustom) {
+            const customItem = document.createElement('div');
+            customItem.className = 'suggestion-item custom-add';
+            customItem.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+            customItem.style.color = 'var(--accent-guava)';
+            
+            if (query.length > 0) {
+                customItem.innerHTML = `✨ 使用自訂: <span style="color:#fff;font-weight:bold;">${escapeHtml(query)}</span>`;
+            } else {
+                customItem.innerHTML = `✨ 自訂輸入值...`;
+            }
+
+            customItem.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                insertVariable(query, mode);
+                hideSuggestions();
+            };
+            suggestionsEl.appendChild(customItem);
+        }
+
+        list.forEach((itemText, index) => {
             const item = document.createElement('div');
             item.className = 'suggestion-item';
-            item.textContent = key;
-            item.onclick = () => {
-                insertVariable(key);
+            item.textContent = itemText;
+            item.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                insertVariable(itemText, mode);
                 hideSuggestions();
             };
             suggestionsEl.appendChild(item);
@@ -827,34 +907,131 @@ function setupEventListeners() {
         selectedSuggestionIndex = -1;
     }
 
-    function insertVariable(key) {
-        const text = formPrompt.value;
+    function insertVariable(textToInsert, mode) {
+        const fullText = formPrompt.value;
         const cursorPos = formPrompt.selectionStart;
-        const lastBraces = text.lastIndexOf('{{', cursorPos - 1);
+        const lastBraces = fullText.lastIndexOf('{{', cursorPos - 1);
         
-        const before = text.substring(0, lastBraces);
-        const after = text.substring(cursorPos);
+        let before, after, replacement;
         
-        // If the user already typed part of the closing braces or not
-        const hasClosing = after.trim().startsWith('}}');
-        const replacement = `{{${key}${hasClosing ? '' : '}}'}`;
+        if (mode === 'key') {
+            before = fullText.substring(0, lastBraces);
+            after = fullText.substring(cursorPos);
+            
+            const hasValues = (state.variables[textToInsert] && state.variables[textToInsert].length > 0) || 
+                             (state.variables[textToInsert.toLowerCase()] && state.variables[textToInsert.toLowerCase()].length > 0);
+            
+            const hasClosing = after.trim().startsWith('}}');
+            
+            if (hasValues) {
+                replacement = `{{${textToInsert}:`;
+            } else {
+                replacement = `{{${textToInsert}${hasClosing ? '' : '}}'}`;
+            }
+            
+            if (!hasValues && hasClosing) {
+                after = after.substring(after.indexOf('}}') + 2);
+            }
+
+            formPrompt.value = before + replacement + after;
+            formPrompt.focus();
+            const newPos = before.length + replacement.length;
+            formPrompt.setSelectionRange(newPos, newPos);
+
+            if (hasValues) {
+                setTimeout(() => {
+                    const cursorSettings = getCursorXY(formPrompt, newPos);
+                    showSuggestions('value', '', cursorSettings, textToInsert);
+                }, 50);
+            }
+        } else {
+            // Inserting Value
+            const rawContent = fullText.substring(lastBraces, cursorPos);
+            const colonIdx = rawContent.indexOf(':');
+            
+            if (colonIdx === -1) {
+                before = fullText.substring(0, cursorPos);
+                after = fullText.substring(cursorPos);
+                replacement = `:${textToInsert}}}`;
+            } else {
+                before = fullText.substring(0, lastBraces + colonIdx + 1); 
+                after = fullText.substring(cursorPos);
+                
+                const hasClosing = after.trim().startsWith('}}');
+                replacement = `${textToInsert}}}`; // Always include closing braces in replacement
+                
+                if (hasClosing) {
+                    // Skip existing closing braces in 'after'
+                    after = after.substring(after.indexOf('}}') + 2);
+                }
+            }
+
+            formPrompt.value = before + replacement + after;
+            formPrompt.focus();
+            
+            let newPos;
+            if (textToInsert === '') {
+                // If custom empty, place cursor inside {{Key:|}}
+                newPos = before.length;
+            } else {
+                // If value selected, place cursor after {{Key:Value}}|
+                newPos = before.length + replacement.length;
+            }
+            formPrompt.setSelectionRange(newPos, newPos);
+        }
         
-        formPrompt.value = before + replacement + (hasClosing ? after.substring(after.indexOf('}}') + 2) : after);
-        
-        // Focus back and set cursor
-        formPrompt.focus();
-        const newPos = before.length + replacement.length;
-        formPrompt.setSelectionRange(newPos, newPos);
-        
-        // Trigger sync
         syncVariablesWithPrompt();
     }
 
-    // Helper to get cursor coordinates in textarea
-    function getCursorXY(textarea, selectionStart) {
-        const { offsetLeft, offsetTop } = textarea;
-        // Simple approximation
-        return { x: 10, y: textarea.offsetTop + 30 };
+    // Helper to get cursor coordinates in textarea using a mirror div
+    function getCursorXY(textarea, selectionPoint) {
+        const div = document.createElement('div');
+        const copyStyle = getComputedStyle(textarea);
+        
+        // Basic styles
+        div.style.whiteSpace = 'pre-wrap';
+        div.style.wordWrap = 'break-word';
+        div.style.position = 'absolute';
+        div.style.visibility = 'hidden';
+        
+        // Copy relevant styles for measuring
+        const props = [
+            'font-family', 'font-size', 'font-weight', 'font-style', 'font-variant',
+            'line-height', 'text-transform', 'letter-spacing', 'word-spacing',
+            'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+            'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
+            'box-sizing', 'width'
+        ];
+        
+        props.forEach(prop => {
+            div.style[prop] = copyStyle.getPropertyValue(prop);
+        });
+        
+        // Special handle for width to match scrollbar behavior
+        div.style.width = textarea.clientWidth + 'px';
+        div.style.overflow = 'hidden';
+        
+        document.body.appendChild(div);
+        
+        // Content up to cursor
+        const textContent = textarea.value.substring(0, selectionPoint);
+        div.textContent = textContent;
+        
+        // Marker for cursor position
+        const span = document.createElement('span');
+        span.textContent = '|';
+        div.appendChild(span);
+        
+        // Calculate relative coordinates
+        const relativeTop = span.offsetTop - textarea.scrollTop;
+        const relativeLeft = span.offsetLeft - textarea.scrollLeft;
+        
+        const finalX = textarea.offsetLeft + relativeLeft;
+        const finalY = textarea.offsetTop + relativeTop;
+        
+        document.body.removeChild(div);
+        
+        return { x: finalX, y: finalY };
     }
 
     formPrompt.addEventListener('paste', (e) => {
@@ -1529,18 +1706,29 @@ function syncVariablesWithPrompt() {
     const promptText = document.getElementById('formPrompt').value;
     const container = document.getElementById('varsBuilderContainer');
     
-    // 1. Extract Keys: {{key}}
-    // Support {{ key }} with spaces
+    // 1. Extract Keys and optional Values: {{key}} or {{key:value}}
     const matches = [...promptText.matchAll(/{{(.*?)}}/g)];
-    const uniqueKeys = new Set();
+    const foundVariables = []; 
+
     matches.forEach(m => {
-        let key = m[1].trim();
-        // Handle default value syntax {{key:default}}
-        if (key.includes(':')) {
-            key = key.split(':')[0].trim();
+        const content = m[1].trim();
+        if (!content) return;
+
+        let key = content;
+        let val = null;
+
+        if (content.includes(':')) {
+            const parts = content.split(':');
+            key = parts[0].trim();
+            val = parts.slice(1).join(':').trim();
         }
-        if (key) uniqueKeys.add(key);
+
+        if (key) {
+            foundVariables.push({ key, defaultValue: val });
+        }
     });
+
+    const uniqueKeys = new Set(foundVariables.map(v => v.key));
 
     // 2. Remove rows for keys that no longer exist
     const currentRows = Array.from(container.children);
@@ -1553,10 +1741,31 @@ function syncVariablesWithPrompt() {
 
     // 3. Add rows for new keys
     uniqueKeys.forEach(key => {
-        // Check if row exists
         const exists = currentRows.find(r => r.dataset.key === key);
         if (!exists) {
             createVariableRow(container, key);
+        }
+    });
+
+    // 4. Update tags: Clear old auto-tags and add current ones
+    uniqueKeys.forEach(key => {
+        const row = Array.from(container.children).find(r => r.dataset.key === key);
+        if (row) {
+            const tagsContainer = row.querySelector('.tags-container');
+            
+            // Remove all tags marked as auto
+            const autoTags = tagsContainer.querySelectorAll('.var-tag[data-auto="true"]');
+            autoTags.forEach(t => tagsContainer.removeChild(t));
+            
+            // Add current values from prompt as auto tags
+            const valuesForThisKey = foundVariables
+                .filter(v => v.key === key && v.defaultValue)
+                .map(v => v.defaultValue);
+            
+            // Deduplicate across this key's occurrences
+            [...new Set(valuesForThisKey)].forEach(val => {
+                addTag(tagsContainer, val, null, true);
+            });
         }
     });
 }
@@ -1612,39 +1821,46 @@ function createVariableRow(container, key) {
             e.preventDefault();
             const val = input.value.trim();
             if (val) {
-                addTag(tagsContainer, val, input);
+                addTag(tagsContainer, val, input, false); // Manually added
                 input.value = '';
             }
         }
     });
 
-    // Blur also adds tag? Maybe optional, stick to Enter for now to avoid accidental adds.
-    
     row.appendChild(tagsContainer);
     row.appendChild(input);
     
     container.appendChild(row);
 
-    // Pre-fill if we have global suggestions? (Optional, skipping for now)
+    // Auto-populate with existing global options (Initial options are treated as manual/permanent)
+    const existingOptions = state.variables[key] || state.variables[key.replace(/\s+/g, '_')];
+    if (existingOptions && Array.isArray(existingOptions)) {
+        existingOptions.forEach(opt => {
+            addTag(tagsContainer, opt, null, false);
+        });
+    }
 }
 
-function addTag(container, text, inputElement) {
+function addTag(container, text, inputElement, isAuto = false) {
     // Check duplicates
-    const existingTags = Array.from(container.children).map(c => c.dataset.value);
+    const existingTags = Array.from(container.querySelectorAll('.var-tag')).map(c => c.dataset.value);
     if (existingTags.includes(text)) return;
 
     const tag = document.createElement('span');
     tag.className = 'var-tag';
     tag.dataset.value = text;
-    // Styling inline for simplicity
+    if (isAuto) tag.dataset.auto = "true";
+
+    // Styling
     tag.style.display = 'inline-flex';
     tag.style.alignItems = 'center';
-    tag.style.background = 'rgba(34, 197, 94, 0.2)'; // Guava green
+    tag.style.background = isAuto ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.3)'; 
     tag.style.color = '#4ade80';
     tag.style.padding = '2px 8px';
     tag.style.borderRadius = '12px';
     tag.style.fontSize = '0.85rem';
     tag.style.gap = '6px';
+    tag.style.border = isAuto ? '1px dashed rgba(74, 222, 128, 0.5)' : '1px solid transparent';
     
     const textSpan = document.createElement('span');
     textSpan.textContent = text;
@@ -1661,7 +1877,6 @@ function addTag(container, text, inputElement) {
     tag.appendChild(textSpan);
     tag.appendChild(removeBtn);
     
-    // Insert before the input? No, input is outside container in my design above.
     container.appendChild(tag);
 }
 

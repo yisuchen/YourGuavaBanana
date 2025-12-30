@@ -33,8 +33,8 @@ else
     exit 1
 fi
 
-# 3. 執行產出變數腳本
-echo "⚙️ 正在根據新資料產生 variables.json..."
+# 3. 執行產出變數腳本 (自動合併 default_variables.json)
+echo "⚙️ 正在根據新資料與預設變數產生 variables.json..."
 node .github/scripts/generate_vars.js
 
 if [ $? -eq 0 ]; then
