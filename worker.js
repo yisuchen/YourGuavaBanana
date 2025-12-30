@@ -1,7 +1,12 @@
 export default {
   async fetch(request, env) {
+    // 限制僅允許您的 GitHub Pages 網域存取
+    const allowedOrigin = 'https://yisuchen.github.io';
+    const origin = request.headers.get('Origin');
+
+    // 如果是開發環境 (localhost) 也可以考慮放行，否則建議僅限正式網域
     const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': origin === allowedOrigin ? allowedOrigin : allowedOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     };
@@ -11,9 +16,9 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // 2. 如果是直接開啟網址 (GET)，回傳說明訊息而非錯誤
+    // 2. 如果是直接開啟網址 (GET)，回傳說明訊息
     if (request.method === 'GET') {
-      return new Response("BananaGuava API Worker is Running. Waiting for POST submissions...", {
+      return new Response("BananaGuava API Worker is Running. Authorized for: " + allowedOrigin, {
         status: 200,
         headers: corsHeaders
       });
@@ -26,6 +31,19 @@ export default {
 
       if (!data) {
         throw new Error("收到的資料格式不正確或內容為空");
+      }
+
+      // --- 資安強化：輸入驗證 ---
+      if (data.prompt && data.prompt.length > 5000) {
+        throw new Error("提示詞內容過長 (上限 5000 字)");
+      }
+
+      if (data.image && data.image.content) {
+        // Base64 估計大小: content.length * 0.75
+        const estimatedSize = data.image.content.length * 0.75;
+        if (estimatedSize > 10 * 1024 * 1024) {
+          throw new Error("圖片檔案過大 (上限 10MB)");
+        }
       }
 
       // Helper: SHA-256 Hashing with SALT
