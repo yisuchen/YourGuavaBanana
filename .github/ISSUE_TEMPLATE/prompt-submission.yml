@@ -24,15 +24,14 @@ body:
     attributes:
       label: 分類
       options:
-        - 人像 (Portrait)
-        - 攝影 (Photography)
-        - 動漫 (Anime)
-        - 風景 (Landscape)
-        - 風格與特效 (Styles & Effects)
-        - 設計與圖標 (Design & Icons)
-        - 建築與空間 (Architecture)
-        - 流程圖與圖表 (Flowcharts & Diagrams)
-        - 其他 (Others)
+        - 人像
+        - 產品
+        - 場景
+        - 設計（插畫、圖表、圖解..等）
+        - 系列
+        - 改圖
+        - 風格
+        - 其他（待歸納）
     validations:
       required: true
   - type: input

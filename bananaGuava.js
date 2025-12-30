@@ -6,6 +6,17 @@ const CONFIG = {
     worker_url: 'https://banana-guava-api.skyyisu.workers.dev'
 };
 
+const FIXED_CATEGORIES = [
+    '人像',
+    '產品',
+    '場景',
+    '設計（插畫、圖表、圖解..等）',
+    '系列',
+    '改圖',
+    '風格',
+    '其他（待歸納）'
+];
+
 // Application State
 let state = {
     allPrompts: [],
@@ -44,6 +55,22 @@ async function init() {
     await fetchPrompts();
 }
 
+function populateCategoryDropdown(selectElement, selectedValue = '') {
+    if (!selectElement) return;
+    
+    // Keep the first default option
+    selectElement.innerHTML = '<option value="">請選擇分類...</option>';
+    
+    // Use ONLY fixed categories as requested
+    FIXED_CATEGORIES.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        if (cat === selectedValue) option.selected = true;
+        selectElement.appendChild(option);
+    });
+}
+
 function openAnonFormLogic() {
     const submitFormModal = document.getElementById('submitFormModal');
     if (!submitFormModal) return;
@@ -59,24 +86,7 @@ function openAnonFormLogic() {
 
     // Populate Categories
     const select = document.getElementById('formCategorySelect');
-    // Keep the first default option
-    select.innerHTML = '<option value="">請選擇分類...</option>';
-    
-    const sortedCategories = Array.from(state.categories).sort();
-    sortedCategories.forEach(cat => {
-        if (cat !== 'All' && cat !== '全部') {
-            const option = document.createElement('option');
-            option.value = cat;
-            option.textContent = cat;
-            select.appendChild(option);
-        }
-    });
-    
-    // Add "Other" option
-    const otherOption = document.createElement('option');
-    otherOption.value = "其他";
-    otherOption.textContent = "其他 (手動輸入)";
-    select.appendChild(otherOption);
+    populateCategoryDropdown(select);
 
     submitFormModal.style.display = 'block';
     document.body.style.overflow = 'hidden';
@@ -265,16 +275,17 @@ function processIssue(issue) {
 }
 
 function extractMetadata() {
-    state.categories = new Set();
+    state.categories = new Set(FIXED_CATEGORIES);
     state.tags = new Set();
 
     // Use all available prompts for metadata to keep filters consistent
     const combined = [...state.allPrompts, ...state.previewPrompts];
 
-    // First pass: collect all categories
+    // First pass: validate categories (only allow fixed ones)
     combined.forEach(p => {
-        if (p.category) {
-            state.categories.add(p.category);
+        if (p.category && !state.categories.has(p.category)) {
+            // If category is not in the fixed list, force it to '其他（待歸納）' or '未分類'
+            // For UI consistency, we'll keep the original p.category but won't add it to filter list
         }
     });
 
@@ -300,34 +311,31 @@ function applyFilters() {
     state.filteredPrompts = sourceData.filter(p => {
         // 1. Category Filter
         if (category !== 'All' && p.category !== category) {
-            return false;
+            // Special case: if filtering for '其他（待歸納）', also show items that don't match any fixed category
+            if (category === '其他（待歸納）') {
+               if (FIXED_CATEGORIES.includes(p.category)) return false;
+            } else {
+               return false;
+            }
         }
 
-        // 2. Tag Filter
+        // 2. Search Filter (Title + Prompt Text)
+        if (term) {
+            const inTitle = p.displayTitle.toLowerCase().includes(term);
+            const inBody = p.promptText.toLowerCase().includes(term);
+            if (!inTitle && !inBody) return false;
+        }
+
+        // 3. Tag Filter
         if (tag && !p.computedTags.includes(tag)) {
             return false;
-        }
-
-        // 3. Search Filter
-        if (term) {
-            const matchesTitle = (p.displayTitle && p.displayTitle.toLowerCase().includes(term)) || p.title.toLowerCase().includes(term);
-            const matchesPrompt = (p.promptText && p.promptText.toLowerCase().includes(term)) || p.body.toLowerCase().includes(term);
-            const matchesTags = p.computedTags.some(t => t.toLowerCase().includes(term));
-            
-            if (!matchesTitle && !matchesPrompt && !matchesTags) {
-                return false;
-            }
         }
 
         return true;
     });
 
-    // Sort: Global number descending (newest first)
-    state.filteredPrompts.sort((a, b) => b.number - a.number);
-
     // Reset to page 1 when filters change
     state.pagination.currentPage = 1;
-    
     renderPage();
 }
 
@@ -377,10 +385,8 @@ function renderCategoryFilters() {
     const allBadge = createCategoryBadge('全部', 'All');
     container.appendChild(allBadge);
 
-    // Sort categories
-    const sortedCategories = Array.from(state.categories).sort();
-
-    sortedCategories.forEach(cat => {
+    // Use FIXED_CATEGORIES to maintain specific order and content
+    FIXED_CATEGORIES.forEach(cat => {
         container.appendChild(createCategoryBadge(cat, cat));
     });
 }
@@ -1075,8 +1081,8 @@ async function handleAnonSubmission() {
     
     // Handle Category
     let category = document.getElementById('formCategorySelect').value;
-    if (!category || category === '其他') {
-        if (!category) category = '未分類';
+    if (!category) {
+        category = '未分類';
     }
 
     // Prepare Base Data
@@ -1461,25 +1467,7 @@ function openEditForm() {
     
     // Category
     const select = document.getElementById('formCategorySelect');
-    select.innerHTML = '<option value="">請選擇分類...</option>';
-    Array.from(state.categories).sort().forEach(cat => {
-        if (cat !== 'All' && cat !== '全部') {
-            const option = document.createElement('option');
-            option.value = cat;
-            option.textContent = cat;
-            if (cat === prompt.category) option.selected = true;
-            select.appendChild(option);
-        }
-    });
-    
-    // Handle "Other" if category not in list
-    if (!state.categories.has(prompt.category) && prompt.category !== '未分類') {
-        const otherOption = document.createElement('option');
-        otherOption.value = prompt.category;
-        otherOption.textContent = `${prompt.category} (現有)`;
-        otherOption.selected = true;
-        select.appendChild(otherOption);
-    }
+    populateCategoryDropdown(select, prompt.category);
 
     // Tags
     const tagsContainer = document.getElementById('formTagsContainer');
