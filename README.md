@@ -2,53 +2,52 @@
 
 > **「香蕉你個芭樂：這裡不產水果，只產讓 AI 聽懂人話的神提示。」**
 
-**BananaGuava** 是一個向 [mukiwu/prompts-vault](https://github.com/mukiwu/prompts-vault) 致敬並進行深度功能演進的學習實作專案。它突破了傳統靜態列表的限制，透過 GitHub Issues 與 Cloudflare Workers 的巧妙結合，打造出一個具備「互動變數替換」與「智慧投稿系統」的無後端提示詞分享平台。
+**BananaGuava** 是一個向 [mukiwu/prompts-vault](https://github.com/mukiwu/prompts-vault) 致敬並進行深度功能演進的學習實作專案。它突破了傳統靜態列表的限制，透過 GitHub Issues 與 Cloudflare Workers 的巧妙結合，打造出一個具備「進階變數替換」與「資安強化投稿系統」的無後端提示詞分享平台。
 
 ---
 
 ## 🚀 核心黑科技 (Core Innovations)
 
-### 1. 互動式變數引擎 (Interactive Variable Engine)
-這是本專案與一般提示詞庫最大的不同點。
-- **動態 UI 生成**：自動解析提示詞內容中的 `{{key}}` 語法，並將其渲染為可點擊的互動按鈕（Pill）。
-- **智慧浮動選單 (Popover)**：點擊變數按鈕即跳出選單，使用者可從預設選項中挑選或直接輸入自訂內容。
-- **在地化變數 (Localized Variables)**：
-    - 支援從 GitHub Issue 正文中解析隱藏的 `Variables (key=value)` 區塊。
-    - **優先級機制**：彈窗選單會優先顯示該提示詞專屬的選項（如：特定的台灣在地地標），若無則回退至全站共用的 `variables.json`。
+### 1. 進階互動變數引擎 (Advanced Variable Engine)
+本專案的核心靈魂，讓靜態文字轉化為智慧模板。
+- **雙態變數語法**：
+    - **基礎型 `{{變數}}`**：顯示變數名，等待點擊選擇。
+    - **預設型 `{{鍵名:預設值}}`**：初始即顯示預設內容（如 `{{城市:台北}}`），拿到即可複製，同時保留點擊切換選項的彈性。
+- **智慧浮動選單 (Smart Popover)**：
+    - **鏡像定位技術 (Mirror-Div Tracking)**：實作複雜的 Caret 定位邏輯，確保選單精準出現在文字游標處。
+    - **智慧空間翻轉**：自動偵測視窗邊界，空間不足時自動向上彈出，解決 UI 遮擋問題。
+- **在地化變數優先級**：優先載入該 Issue 專屬的變數選項，並與全站共用的 `default_variables.json` 完美合併。
 
 ### 2. 智慧投稿助手 (Submission Assistant)
-我們提供兩套投稿路徑，兼顧管理效率與使用者隱私。
-- **GitHub 原生投稿**：利用 Issue Form 結構化輸入，適合開發者參與。
-- **網頁版匿名投稿**：
-    - **無後端上傳**：串接 Cloudflare Workers API，實現免登入投稿並同步發布至 GitHub。
-    - **變數自動偵測**：輸入提示詞時，系統會即時偵測 `{{key}}` 並動態生成下方的變數選項設定區。
-    - **現代化 Pill UI**：標籤（Tags）與變數選項均採用「膠囊標籤」形式，支援 Enter 新增與一鍵刪除。
-    - **圖片上傳與剪貼**：支援檔案選取與剪貼簿貼上圖片預覽。
+我們提供具備專業輸入體驗的投稿介面。
+- **即時偵測與同步 (Real-time Sync)**：輸入提示詞時，系統自動解析 `{{key}}` 甚至 `{{key:value}}`，並即時在下方生成選項標籤設定區。
+- **殘影清除機制 (IME Defense)**：針對中文輸入法優化，自動清除輸入過程產生的碎片標籤（ㄖ -> 日 -> 日本），確保變數區整潔。
+- **即時自訂值**：選單內建「✨ 自訂輸入值」功能並置頂，讓您隨時建立清單外的新選項。
+- **多媒體支援**：支援檔案選取與剪貼簿直接貼上圖片進行預覽。
 
-### 3. 高性能影像處理系統
-- **智慧縮圖代理**：全面串接 `wsrv.nl` 影像服務，自動將 GitHub 上的原始圖片進行縮放與 WebP 格式轉換。
-- **延遲載入 (Lazy Loading)**：大幅減少首屏流量與渲染壓力。
+### 3. 高性能影像處理與資安
+- **智慧縮圖代理**：全面串接 `wsrv.nl` 服務，自動進行 GitHub 原始圖片的縮放與 WebP 轉換。
+- **Worker 資安鎖定**：
+    - **CORS 來源鎖定**：API 僅接受來自特定 GitHub Pages 網域的請求。
+    - **流量與負載驗證**：嚴格限制投稿字數與圖片 Payload 大小，防範惡意灌水。
 
 ---
 
 ## 🏗️ 系統架構 (Architecture)
 
-本專案堅持「無伺服器 (Serverless)」原則，極大化利用現成生態系：
-- **資料層 (Storage)**：GitHub Issues。
-- **緩存層 (Cache)**：透過 GitHub Actions 定時抓取 Issues 並生成 `data.json` 與 `variables.json` 靜態檔案，避開 GitHub API Rate Limit。
-- **通訊層 (API)**：Cloudflare Workers 作為中轉站，處理匿名投稿的驗證與發布。
-- **展示層 (Frontend)**：純原生 Vanilla JavaScript、CSS3 (Glassmorphism 磨砂玻璃濾鏡) 與 HTML5。
-
----
-
-## 🎨 UI/UX 特色
-- **深色美學**：採用 Deep Navy 配色，搭配 Banana Yellow (#fbbf24) 與 Guava Green (#22c55e) 的品牌雙色。
-- **響應式格狀佈局**：自動適應手機、平板與桌機螢幕。
-- **雙軌載入機制**：優先載入本地 JSON 檔案以追求極速，失敗時自動回退 (Fallback) 請求 GitHub API。
+本專案採用極簡但強大的「無伺服器 (Serverless)」架構：
+- **資料儲存 (Source of Truth)**：GitHub Issues。
+- **靜態快取 (Cache Layer)**：透過 GitHub Actions 定時執行 `generate_vars.js`，將 Issues 內容與 `default_variables.json` 合併，生成極速載入的 `data.json` 與 `variables.json`。
+- **溝通橋樑 (API Layer)**：Cloudflare Workers 作為中轉站，處理匿名投稿的 SHA-256 雜湊驗證與 GitHub Issue API 發布。
+- **展示層 (Frontend)**：純原生 Vanilla JavaScript、現代 CSS3 (Glassmorphism) 與 HTML5。
 
 ---
 
 ## 🛠️ 開發者指南
+
+### 語法範例
+- **基礎型**：`創作一幅以 {{性別}} 為主角的畫。`
+- **預設型**：`查找地點位於 {{台灣城市:台北}} 且取得天氣。`
 
 ### 建立你的專屬 Vault
 1. **Fork** 本專案。
@@ -60,20 +59,12 @@
        worker_url: '你的CloudflareWorker網址'
    };
    ```
-3. 設定 GitHub Actions 的 Secret 以啟用自動同步。
-4. 在 GitHub Pages 設定中開啟部署。
+3. 執行本地同步腳本：`./manual_sync_forLocal.sh`（需安裝 GitHub CLI）。
+4. 在 GitHub Actions Secrets 中設定 `GITHUB_TOKEN` 與 `AUTH_SALT`。
 
-### 文件索引
-- [開發規劃藍圖 (Roadmap)](plan.md)
-- [投稿模板定義](.github/ISSUE_TEMPLATE/prompt-submission.yml)
-- [匿名投稿 Worker 代碼](worker.js)
-
----
-
-## 🤝 致敬與感謝
+--- 🤝 致敬與感謝
 - 原始設計理念參考：[MUKi's Prompts Vault](https://mukiwu.github.io/prompts-vault/)
-- 圖片處理服務：[wsrv.nl](https://wsrv.nl/)
-- 專案圖示與 UI 色彩：由 BananaGuava 團隊設計。
+- 影像處理服務：[wsrv.nl](https://wsrv.nl/)
 
 ---
-*本專案程式碼開放，僅供學習與技術交流使用，請尊重提示詞創作者的版權。*
+*本專案程式碼開放，僅供學習與技術交流使用。*
