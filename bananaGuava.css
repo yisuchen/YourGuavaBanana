@@ -971,9 +971,9 @@ footer {
     border-radius: 8px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     z-index: 1000;
-    max-height: 200px;
+    max-height: 350px;
     overflow-y: auto;
-    width: 200px;
+    width: 300px;
 }
 
 .suggestion-item {

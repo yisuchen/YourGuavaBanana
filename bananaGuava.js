@@ -1102,6 +1102,13 @@ async function handleAnonSubmission() {
     }
 
     // Prepare Base Data
+    let password = document.getElementById('formPassword').value;
+    
+    // 如果是新投稿且未填寫密碼，隨機產生一個（因後端 Worker 目前設定為必填）
+    if (!isUpdate && !password) {
+        password = 'anon_' + Math.random().toString(36).substring(2, 15);
+    }
+
     const data = {
         title: document.getElementById('formTitle').value,
         prompt: document.getElementById('formPrompt').value,
@@ -1109,7 +1116,7 @@ async function handleAnonSubmission() {
         tags: Array.from(document.querySelectorAll('#formTagsContainer .var-tag')).map(t => t.dataset.value).join(','),
         source: document.getElementById('formSource').value,
         variables: collectVariables(),
-        password: document.getElementById('formPassword').value,
+        password: password,
         image: null
     };
 
