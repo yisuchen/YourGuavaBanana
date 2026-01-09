@@ -54,6 +54,8 @@ jobs:
           git push
 
       - name: Clear Variable Growth Pool
+        # 僅在定時任務或手動觸發時才清理，避免日常 Issue 編輯導致頻繁清理
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
