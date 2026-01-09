@@ -1,12 +1,16 @@
 export default {
   async fetch(request, env) {
     // 限制僅允許您的 GitHub Pages 網域存取
-    const allowedOrigin = 'https://yisuchen.github.io';
+    const allowedOrigins = [
+      'https://yisuchen.github.io',
+      'http://127.0.0.1:5500',
+      'http://localhost:5500'
+    ];
     const origin = request.headers.get('Origin');
+    const corsOrigin = allowedOrigins.includes(origin) ? origin : 'https://yisuchen.github.io';
 
-    // 如果是開發環境 (localhost) 也可以考慮放行，否則建議僅限正式網域
     const corsHeaders = {
-      'Access-Control-Allow-Origin': origin === allowedOrigin ? allowedOrigin : allowedOrigin,
+      'Access-Control-Allow-Origin': corsOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     };
