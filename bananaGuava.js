@@ -938,6 +938,33 @@ function setupEventListeners() {
         selectedSuggestionIndex = -1;
     }
 
+    // --- API & Worker Helpers ---
+    async function reportNewVariable(key, value) {
+        if (!key || !value) return;
+        
+        // Don't report if it already exists in our current session state (case-insensitive check)
+        const existing = state.variables[key] || state.variables[key.toLowerCase()];
+        if (existing && existing.some(v => v.toLowerCase() === value.toLowerCase())) {
+            return;
+        }
+
+        console.log(`[Auto-Sync] Reporting new variable: ${key} = ${value}`);
+        
+        try {
+            await fetch(state.config.worker_url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'sync_variables',
+                    key: key,
+                    value: value
+                })
+            });
+        } catch (e) {
+            console.error('[Auto-Sync] Failed to sync variable:', e);
+        }
+    }
+
     function insertVariable(textToInsert, mode) {
         const fullText = formPrompt.value;
         const cursorPos = formPrompt.selectionStart;
@@ -948,6 +975,11 @@ function setupEventListeners() {
         if (mode === 'key') {
             before = fullText.substring(0, lastBraces);
             after = fullText.substring(cursorPos);
+
+            // Healthy growth: add to state.variables if it's new
+            if (!state.variables[textToInsert]) {
+                state.variables[textToInsert] = [];
+            }
 
             const hasValues = (state.variables[textToInsert] && state.variables[textToInsert].length > 0) ||
                 (state.variables[textToInsert.toLowerCase()] && state.variables[textToInsert.toLowerCase()].length > 0);
@@ -979,11 +1011,15 @@ function setupEventListeners() {
             // Inserting Value
             const rawContent = fullText.substring(lastBraces, cursorPos);
             const colonIdx = rawContent.indexOf(':');
+            let contextKey = '';
 
             if (colonIdx === -1) {
                 before = fullText.substring(0, cursorPos);
                 after = fullText.substring(cursorPos);
                 replacement = `:${textToInsert}}}`;
+                // Try to find key
+                const keyMatch = rawContent.match(/{{(.*)/);
+                if (keyMatch) contextKey = keyMatch[1].trim();
             } else {
                 before = fullText.substring(0, lastBraces + colonIdx + 1);
                 after = fullText.substring(cursorPos);
@@ -994,6 +1030,19 @@ function setupEventListeners() {
                 if (hasClosing) {
                     // Skip existing closing braces in 'after'
                     after = after.substring(after.indexOf('}}') + 2);
+                }
+
+                contextKey = rawContent.substring(2, colonIdx).trim();
+            }
+
+            // Healthy growth: add value to state.variables[contextKey]
+            if (contextKey) {
+                if (!state.variables[contextKey]) {
+                    state.variables[contextKey] = [];
+                }
+                if (!state.variables[contextKey].includes(textToInsert)) {
+                    state.variables[contextKey].push(textToInsert);
+                    reportNewVariable(contextKey, textToInsert); // Auto-sync to GitHub
                 }
             }
 
@@ -1590,9 +1639,20 @@ function showVariablePopover(targetSpan, rawKey, localVariables = {}) {
     popover.appendChild(header);
 
     const handleSelect = (value) => {
+        if (!value) return;
         targetSpan.textContent = value;
         targetSpan.dataset.value = value;
         targetSpan.classList.add('filled');
+
+        // Healthy growth: sync custom value to global state even if not submitting a full prompt
+        if (!state.variables[rawKey]) {
+            state.variables[rawKey] = [];
+        }
+        if (!state.variables[rawKey].includes(value)) {
+            state.variables[rawKey].push(value);
+            reportNewVariable(rawKey, value); // Auto-sync to GitHub
+        }
+
         closePopover();
     };
 
@@ -1747,6 +1807,14 @@ function syncVariablesWithPrompt() {
 
         if (key) {
             foundVariables.push({ key, defaultValue: val });
+
+            // Healthy growth: sync newly typed keys and values to global state
+            if (!state.variables[key]) {
+                state.variables[key] = [];
+            }
+            if (val && !state.variables[key].includes(val)) {
+                state.variables[key].push(val);
+            }
         }
     });
 
@@ -1843,6 +1911,14 @@ function createVariableRow(container, key) {
             e.preventDefault();
             const val = input.value.trim();
             if (val) {
+                // Healthy growth: add to state.variables
+                if (!state.variables[key]) {
+                    state.variables[key] = [];
+                }
+                if (!state.variables[key].includes(val)) {
+                    state.variables[key].push(val);
+                }
+
                 addTag(tagsContainer, val, input, false); // Manually added
                 input.value = '';
             }

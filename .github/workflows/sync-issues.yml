@@ -52,3 +52,22 @@ jobs:
           git remote -v
           git branch --show-current
           git push
+
+      - name: Clear Variable Growth Pool
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          POOL_TITLE="[Variable Growth Pool]"
+          # Find the issue number
+          ISSUE_NUMBER=$(gh issue list --search "$POOL_TITLE in:title" --json number --jq '.[0].number')
+          
+          if [ -n "$ISSUE_NUMBER" ] && [ "$ISSUE_NUMBER" != "null" ]; then
+            echo "Found Variable Growth Pool issue: #$ISSUE_NUMBER. Clearing content..."
+            gh issue edit "$ISSUE_NUMBER" --body "### Variables (key=value)
+
+--- 
+*此為變數彙整池，請勿刪除 (由 GitHub Action 自動清理)*"
+            echo "Successfully cleared Issue #$ISSUE_NUMBER"
+          else
+            echo "Variable Growth Pool issue not found. Skipping."
+          fi

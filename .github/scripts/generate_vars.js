@@ -23,7 +23,27 @@ function main() {
   // Map<string, Set<string>>
   const variablesMap = new Map();
 
-  // 1. Load Default Variables
+  // 1. Load Existing variables.json (Persistence)
+  if (fs.existsSync(VARS_OUTPUT_PATH)) {
+    try {
+      const existingContent = fs.readFileSync(VARS_OUTPUT_PATH, 'utf-8');
+      const existingVars = JSON.parse(existingContent);
+      Object.keys(existingVars).forEach(key => {
+        if (!variablesMap.has(key)) {
+          variablesMap.set(key, new Set());
+        }
+        const set = variablesMap.get(key);
+        if (Array.isArray(existingVars[key])) {
+          existingVars[key].forEach(v => set.add(v));
+        }
+      });
+      console.log(`Loaded existing variables from ${VARS_OUTPUT_PATH}`);
+    } catch (e) {
+      console.error('Error parsing existing variables.json:', e);
+    }
+  }
+
+  // 2. Load Default Variables (Seeds)
   if (fs.existsSync(DEFAULT_VARS_PATH)) {
     try {
       const defaultContent = fs.readFileSync(DEFAULT_VARS_PATH, 'utf-8');
@@ -46,11 +66,10 @@ function main() {
       console.log(`Loaded default variables from ${DEFAULT_VARS_PATH}`);
     } catch (e) {
       console.error('Error parsing default_variables.json:', e);
-      // We continue even if default vars fail, or should we exit? 
-      // Let's just log error and continue.
     }
   }
 
+  // 3. Load variables from Issues (New/Current data)
   issues.forEach(issue => {
     const body = issue.body || '';
     const varsSection = extractVariablesSection(body);
