@@ -3,7 +3,7 @@ const CONFIG = {
     repo: 'YourGuavaBanana',
     label: 'accepted',
     per_page: 100,
-    worker_url: 'https://banana-guava-api-dev.skyyisu.workers.dev'
+    worker_url: 'https://banana-guava-api.skyyisu.workers.dev'
 };
 
 const FIXED_CATEGORIES = [
