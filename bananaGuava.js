@@ -150,17 +150,22 @@ async function fetchPrompts() {
         }
 
         // Merge variables: defaultVars + localVars
-        state.variables = { ...defaultVars };
-        Object.keys(localVars).forEach(key => {
-            // Normalize key to lower case for comparison if needed, but keeping case sensitive for now based on existing logic
-            // Actually, keys in variables.json might be case sensitive.
-            if (state.variables[key]) {
-                // Merge arrays and deduplicate
-                state.variables[key] = [...new Set([...state.variables[key], ...localVars[key]])];
-            } else {
-                state.variables[key] = localVars[key];
-            }
-        });
+        state.variables = {};
+        
+        const mergeIntoState = (sourceObj) => {
+            Object.keys(sourceObj).forEach(rawKey => {
+                const key = rawKey.toLowerCase().replace(/\s+/g, '_');
+                if (!state.variables[key]) {
+                    state.variables[key] = [];
+                }
+                const values = Array.isArray(sourceObj[rawKey]) ? sourceObj[rawKey] : [];
+                // Merge and deduplicate
+                state.variables[key] = [...new Set([...state.variables[key], ...values])];
+            });
+        };
+
+        mergeIntoState(defaultVars);
+        mergeIntoState(localVars);
 
         // Fallback to API if data not loaded
         if (!data) {

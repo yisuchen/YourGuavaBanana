@@ -175,19 +175,8 @@ function parseVariables(text, variablesMap) {
 }
 
 function normalizeKey(keyRaw) {
-  // trim, toLowerCase.
-  // Optional: replace spaces with underscore? Enhance plan says: "（建議）空白轉底線"
-  // Let's implement trim and toLowerCase first as mandatory.
-  let key = keyRaw.trim().toLowerCase();
-  
-  // Implementing optional: replace whitespace with underscore for cleaner keys
-  // key = key.replace(/\s+/g, '_'); 
-  // Wait, let's stick to simple trim + lower case first unless strictly required.
-  // Plan says: "(建議) 空白轉底線: my key -> my_key"
-  // Let's do it to be safe and cleaner.
-  key = key.replace(/\s+/g, '_');
-  
-  return key;
+  // trim, toLowerCase, and replace spaces with underscore for consistent keys
+  return keyRaw.trim().toLowerCase().replace(/\s+/g, '_');
 }
 
 main();
