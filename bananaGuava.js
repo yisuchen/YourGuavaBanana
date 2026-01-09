@@ -3,7 +3,7 @@ const CONFIG = {
     repo: 'YourGuavaBanana',
     label: 'accepted',
     per_page: 100,
-    worker_url: 'https://banana-guava-api.skyyisu.workers.dev'
+    worker_url: 'https://banana-guava-api-dev.skyyisu.workers.dev'
 };
 
 const FIXED_CATEGORIES = [
@@ -604,6 +604,42 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
+// --- API & Worker Helpers ---
+async function reportNewVariable(key, value) {
+    console.log(`[reportNewVariable] Attempting to report: ${key} = ${value}`);
+    if (!key || !value) {
+        console.log('[reportNewVariable] Missing key or value');
+        return;
+    }
+
+    // Don't report if it already exists in our current session state (case-insensitive check)
+    const existing = state.variables[key] || state.variables[key.toLowerCase()];
+    
+    if (existing && Array.isArray(existing)) {
+        const alreadyHasValue = existing.some(v => String(v).toLowerCase() === String(value).toLowerCase());
+        if (alreadyHasValue) {
+            console.log(`[reportNewVariable] Value "${value}" already exists in key "${key}"`, existing);
+            return;
+        }
+    }
+
+    console.log(`[Auto-Sync] Reporting new variable: ${key} = ${value}`);
+
+    try {
+        await fetch(CONFIG.worker_url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'sync_variables',
+                key: key,
+                value: value
+            })
+        });
+    } catch (e) {
+        console.error('[Auto-Sync] Failed to sync variable:', e);
+    }
+}
+
 function setupEventListeners() {
     document.getElementById('searchInput').addEventListener('input', (e) => {
         state.filters.search = e.target.value;
@@ -936,33 +972,6 @@ function setupEventListeners() {
     function hideSuggestions() {
         suggestionsEl.style.display = 'none';
         selectedSuggestionIndex = -1;
-    }
-
-    // --- API & Worker Helpers ---
-    async function reportNewVariable(key, value) {
-        if (!key || !value) return;
-        
-        // Don't report if it already exists in our current session state (case-insensitive check)
-        const existing = state.variables[key] || state.variables[key.toLowerCase()];
-        if (existing && existing.some(v => v.toLowerCase() === value.toLowerCase())) {
-            return;
-        }
-
-        console.log(`[Auto-Sync] Reporting new variable: ${key} = ${value}`);
-        
-        try {
-            await fetch(state.config.worker_url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'sync_variables',
-                    key: key,
-                    value: value
-                })
-            });
-        } catch (e) {
-            console.error('[Auto-Sync] Failed to sync variable:', e);
-        }
     }
 
     function insertVariable(textToInsert, mode) {
@@ -1648,9 +1657,13 @@ function showVariablePopover(targetSpan, rawKey, localVariables = {}) {
         if (!state.variables[rawKey]) {
             state.variables[rawKey] = [];
         }
-        if (!state.variables[rawKey].includes(value)) {
-            state.variables[rawKey].push(value);
+        
+        const isNewValue = !state.variables[rawKey].some(v => String(v).toLowerCase() === String(value).toLowerCase());
+        
+        if (isNewValue) {
+            // Report FIRST before adding to local state to avoid race condition in check
             reportNewVariable(rawKey, value); // Auto-sync to GitHub
+            state.variables[rawKey].push(value);
         }
 
         closePopover();
