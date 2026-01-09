@@ -10,6 +10,11 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    # 邏輯：如果是定時任務、手動觸發、或者是「非變數池」的 Issue 變動，才執行同步
+    if: |
+      github.event_name == 'schedule' || 
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'issues' && contains(github.event.issue.title, '[Variable Growth Pool]') == false)
     permissions:
       contents: write
       issues: read
