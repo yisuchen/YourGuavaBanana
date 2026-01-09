@@ -785,6 +785,15 @@ function setupEventListeners() {
     const suggestionsEl = document.getElementById('varSuggestions');
     let selectedSuggestionIndex = -1;
 
+    // Close suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+        if (suggestionsEl.style.display === 'block') {
+            if (!suggestionsEl.contains(e.target) && e.target !== formPrompt) {
+                hideSuggestions();
+            }
+        }
+    });
+
     formPrompt.addEventListener('input', (e) => {
         // Auto-sync variables
         syncVariablesWithPrompt();
