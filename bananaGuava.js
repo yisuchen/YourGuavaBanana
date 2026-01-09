@@ -1625,17 +1625,19 @@ function showVariablePopover(targetSpan, rawKey, localVariables = {}) {
 
     const key = rawKey.toLowerCase().replace(/\s+/g, '_');
 
-    // Find options: prioritize local variables from the issue body
-    let options = (localVariables && (localVariables[key] || localVariables[rawKey.toLowerCase()])) ||
-        state.variables[key] ||
-        state.variables[rawKey.toLowerCase()];
+    // Merge options: local variables from the issue + global state variables
+    const localOptions = (localVariables && (localVariables[key] || localVariables[rawKey.toLowerCase()])) || [];
+    const globalOptions = state.variables[key] || state.variables[rawKey.toLowerCase()] || [];
+    
+    // Combine and deduplicate
+    let options = [...new Set([...localOptions, ...globalOptions])];
 
     // Fallback logic for keys like text_1, text_2 to use base key 'text'
-    if (!options) {
+    if (options.length === 0) {
         const parts = key.split('_');
         if (parts.length > 1) {
             const baseKey = parts.slice(0, -1).join('_');
-            options = (localVariables && localVariables[baseKey]) || state.variables[baseKey];
+            options = (localVariables && localVariables[baseKey]) || state.variables[baseKey] || [];
         }
     }
 
