@@ -57,8 +57,77 @@ export default {
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       };
 
-      // --- POST: 建立新投稿 ---
+      // --- POST: 建立新投稿 或 同步變數 ---
       if (method === 'POST') {
+        // 判斷是否為自動同步變數
+        if (data.action === 'sync_variables') {
+          if (!data.key || !data.value) {
+            throw new Error("同步變數需要 key 與 value");
+          }
+
+          const poolTitle = "[Variable Growth Pool]";
+          const searchUrl = `https://api.github.com/search/issues?q=repo:${env.GITHUB_OWNER}/${env.GITHUB_REPO}+type:issue+state:open+in:title+${encodeURIComponent(poolTitle)}`;
+          
+          const searchResponse = await fetch(searchUrl, {
+            headers: {
+              'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
+              'User-Agent': 'BananaGuava-Worker'
+            }
+          });
+          const searchResult = await searchResponse.json();
+          const newEntry = `\n${data.key} = ${data.value}`;
+
+          if (searchResponse.ok && searchResult.total_count > 0) {
+            // 找到了，進行附加 (Append)
+            const existingIssue = searchResult.items[0];
+            const issueUrl = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/issues/${existingIssue.number}`;
+            
+            // 檢查是否已經存在該變數值，避免無限增長
+            if (existingIssue.body.includes(newEntry.trim())) {
+               return new Response(JSON.stringify({ success: true, message: "Value already in pool" }), {
+                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+               });
+            }
+
+            await fetch(issueUrl, {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
+                'Content-Type': 'application/json',
+                'User-Agent': 'BananaGuava-Worker'
+              },
+              body: JSON.stringify({
+                body: existingIssue.body + newEntry
+              })
+            });
+
+            return new Response(JSON.stringify({ success: true, mode: 'append' }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          } else {
+            // 沒找到，建立一個新的
+            const issueBody = `### Variables (key=value)\n${data.key} = ${data.value}\n\n--- \n*此為變數彙整池，請勿刪除*`;
+            const createResponse = await fetch(`https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/issues`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
+                'Content-Type': 'application/json',
+                'User-Agent': 'BananaGuava-Worker'
+              },
+              body: JSON.stringify({
+                title: poolTitle,
+                body: issueBody,
+                labels: ['accepted', 'auto-sync']
+              })
+            });
+            const result = await createResponse.json();
+            return new Response(JSON.stringify({ success: createResponse.ok, id: result.number, mode: 'create' }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+        }
+
+        // 原有的投稿邏輯...
         if (!data.title || !data.password) {
           throw new Error("標題與密碼為必填項");
         }
