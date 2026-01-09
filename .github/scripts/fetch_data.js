@@ -12,9 +12,18 @@ function fetchIssues(label, outputPath) {
         // 使用 GitHub CLI 抓取資料
         // 如果在 GitHub Action 環境，會自動使用 GITHUB_TOKEN
         const cmd = `gh issue list --label "${label}" --state open --limit 100 --json title,body,labels,url,number`;
-        const result = execSync(cmd, { encoding: 'utf-8' });
+        let result = JSON.parse(execSync(cmd, { encoding: 'utf-8' }));
         
-        fs.writeFileSync(outputPath, result, 'utf-8');
+        // 如果是抓取 accepted 標籤，額外過濾掉變數池 Issue
+        if (label === 'accepted') {
+            const originalCount = result.length;
+            result = result.filter(issue => !issue.title.includes('[Variable Growth Pool]'));
+            if (result.length < originalCount) {
+                console.log(`🧹 已從 ${path.basename(outputPath)} 中過濾掉變數池 Issue`);
+            }
+        }
+
+        fs.writeFileSync(outputPath, JSON.stringify(result, null, 2), 'utf-8');
         console.log(`✅ 成功更新 ${path.basename(outputPath)}`);
     } catch (error) {
         console.error(`❌ 抓取 [${label}] 失敗:`, error.message);

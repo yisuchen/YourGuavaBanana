@@ -1,25 +1,12 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const DATA_PATH = path.join(process.cwd(), 'data.json');
 const VARS_OUTPUT_PATH = path.join(process.cwd(), 'variables.json');
 const DEFAULT_VARS_PATH = path.join(process.cwd(), 'default_variables.json');
 
 function main() {
-  if (!fs.existsSync(DATA_PATH)) {
-    console.error(`Error: ${DATA_PATH} not found.`);
-    process.exit(1);
-  }
-
-  const dataContent = fs.readFileSync(DATA_PATH, 'utf-8');
-  let issues;
-  try {
-    issues = JSON.parse(dataContent);
-  } catch (e) {
-    console.error('Error parsing data.json:', e);
-    process.exit(1);
-  }
-
   // Map<string, Set<string>>
   const variablesMap = new Map();
 
@@ -69,16 +56,44 @@ function main() {
     }
   }
 
-  // 3. Load variables from Issues (New/Current data)
-  issues.forEach(issue => {
-    const body = issue.body || '';
-    const varsSection = extractVariablesSection(body);
-    if (varsSection) {
-      parseVariables(varsSection, variablesMap);
+  // 3. Load variables from data.json (Regular Issues)
+  if (fs.existsSync(DATA_PATH)) {
+    try {
+      const issues = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
+      issues.forEach(issue => {
+        const body = issue.body || '';
+        const varsSection = extractVariablesSection(body);
+        if (varsSection) {
+          parseVariables(varsSection, variablesMap);
+        }
+      });
+      console.log(`Processed variables from ${DATA_PATH}`);
+    } catch (e) {
+      console.error('Error reading data.json:', e);
     }
-  });
+  }
+
+  // 4. Directly fetch and parse Variable Growth Pool (The "Growth" part)
+  console.log("📥 正在從 GitHub 直接抓取 Variable Growth Pool...");
+  try {
+    const poolTitle = "[Variable Growth Pool]";
+    const cmd = `gh issue list --search "${poolTitle} in:title" --state open --limit 1 --json body`;
+    const result = JSON.parse(execSync(cmd, { encoding: 'utf-8' }));
+    
+    if (result.length > 0) {
+      const body = result[0].body || '';
+      const varsSection = extractVariablesSection(body);
+      if (varsSection) {
+        parseVariables(varsSection, variablesMap);
+        console.log("✅ 成功從變數池提取新變數");
+      }
+    }
+  } catch (e) {
+    console.log("⚠️ 無法從 GitHub 抓取變數池，跳過此步驟。");
+  }
 
   // Convert Map to Object with sorted keys and sorted values
+
   const result = {};
   const sortedKeys = Array.from(variablesMap.keys()).sort();
 
