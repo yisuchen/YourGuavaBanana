@@ -606,11 +606,7 @@ function escapeHtml(unsafe) {
 
 // --- API & Worker Helpers ---
 async function reportNewVariable(key, value) {
-    console.log(`[reportNewVariable] Attempting to report: ${key} = ${value}`);
-    if (!key || !value) {
-        console.log('[reportNewVariable] Missing key or value');
-        return;
-    }
+    if (!key || !value) return;
 
     // Don't report if it already exists in our current session state (case-insensitive check)
     const existing = state.variables[key] || state.variables[key.toLowerCase()];
@@ -618,7 +614,6 @@ async function reportNewVariable(key, value) {
     if (existing && Array.isArray(existing)) {
         const alreadyHasValue = existing.some(v => String(v).toLowerCase() === String(value).toLowerCase());
         if (alreadyHasValue) {
-            console.log(`[reportNewVariable] Value "${value}" already exists in key "${key}"`, existing);
             return;
         }
     }

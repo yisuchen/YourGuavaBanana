@@ -22,7 +22,7 @@ export default {
 
     // 2. 如果是直接開啟網址 (GET)，回傳說明訊息
     if (request.method === 'GET') {
-      return new Response("BananaGuava API Worker is Running. Authorized for: " + allowedOrigin, {
+      return new Response("BananaGuava API Worker is Running. Authorized for: https://yisuchen.github.io", {
         status: 200,
         headers: corsHeaders
       });
