@@ -173,7 +173,7 @@ async function fetchPrompts() {
 
         // Process Regular Data
         state.allPrompts = data
-            .filter(issue => !issue.pull_request)
+            .filter(issue => !issue.pull_request && issue.title.startsWith('[Prompt]:'))
             .map(issue => ({ ...processIssue(issue), isPreview: false }));
 
         // Process Preview Data

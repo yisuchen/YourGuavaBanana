@@ -15,6 +15,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OLD_TITLE: ${{ github.event.issue.title }}
         run: |
+          # 如果標題包含 [Variable Growth Pool] 則跳過
+          if [[ "$OLD_TITLE" == *"[Variable Growth Pool]"* ]]; then
+            echo "Variable pool detected. Skipping rename."
+            exit 0
+          fi
+
           # 如果標題已經包含 [Prompt]: 則跳過
           if [[ "$OLD_TITLE" == "[Prompt]:"* ]]; then
             echo "Title already formatted. Skipping."
