@@ -235,7 +235,8 @@ function processIssue(issue) {
             const parts = line.split('=');
             if (parts.length >= 2) {
                 const key = parts[0].trim().toLowerCase().replace(/\s+/g, '_');
-                const values = parts.slice(1).join('=').split(/[,，]/).map(v => v.trim()).filter(v => v);
+                // Split by pipe '|' to allow commas in values (e.g. descriptions)
+                const values = parts.slice(1).join('=').split('|').map(v => v.trim()).filter(v => v);
                 localVariables[key] = values;
                 // Also store without underscore for better matching
                 localVariables[parts[0].trim().toLowerCase()] = values;
@@ -2006,7 +2007,7 @@ function collectVariables() {
         if (tagsContainer) {
             const tags = Array.from(tagsContainer.children).map(t => t.dataset.value);
             if (tags.length > 0) {
-                result.push(`${key} = ${tags.join(', ')}`);
+                result.push(`${key} = ${tags.join(' | ')}`);
             }
         }
     }

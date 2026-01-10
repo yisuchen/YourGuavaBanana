@@ -164,7 +164,7 @@ function parseVariables(text, variablesMap) {
     const key = normalizeKey(keyRaw);
     if (!key) continue;
 
-    const values = valueRaw.split(',').map(v => v.trim()).filter(v => v);
+    const values = valueRaw.split('|').map(v => v.trim()).filter(v => v);
     
     if (!variablesMap.has(key)) {
       variablesMap.set(key, new Set());
