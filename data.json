@@ -98,7 +98,7 @@
     "url": "https://github.com/yisuchen/YourGuavaBanana/issues/107"
   },
   {
-    "body": "### 提示詞內容\n海報設計、自媒體封面設計：查找地點位於{{台灣城市:台北}}並且取得地點的天氣和時間。\n\n畫面的主體是當地代表性的建築或者景觀軸側微縮模型，上方是當前天氣的微縮模型，比如雲、太陽等。夢工廠風格，3D建模，細膩、柔和的光線投影，畫面周圍大面積留白，畫面底部居中無襯線體小字寫上位置信息和天氣圖標和時間以及繁體中文位置介紹文案。高品質畫面輸出。\n\n### 分類\n設計（插畫、圖表、圖解..等）\n\n### 來源 (Source)\n@op7418, https://x.com/op7418/status/1993957167079280893\n\n### 標籤\n模型,天氣\n\n### Variables (key=value)\n台灣城市 = 台北, 新北, 桃園, 台中, 台南, 高雄\n\n### 預覽圖片\n![Preview Image](https://raw.githubusercontent.com/yisuchen/YourGuavaBanana/main/uploads/2025-12-25/1766667721537_submission.png)\n\n---\n*此 Issue 由 BananaGuava 網頁版匿名投稿*",
+    "body": "### 提示詞內容\n海報設計、自媒體封面設計：查找地點位於{{台灣城市:台北}}並且取得地點的天氣和時間。\n\n畫面的主體是當地代表性的建築或者景觀軸側微縮模型，上方是當前天氣的微縮模型，比如雲、太陽等。夢工廠風格，3D建模，細膩、柔和的光線投影，畫面周圍大面積留白，畫面底部居中無襯線體小字寫上位置信息和天氣圖標和時間以及繁體中文位置介紹文案。高品質畫面輸出。\n\n### 分類\n設計（插畫、圖表、圖解..等）\n\n### 來源 (Source)\n@op7418, https://x.com/op7418/status/1993957167079280893\n\n### 標籤\n模型,天氣\n\n### Variables (key=value)\n台灣城市 = 台北 | 新北 | 桃園 | 台中 | 台南 | 高雄\n\n### 預覽圖片\n![Preview Image](https://raw.githubusercontent.com/yisuchen/YourGuavaBanana/main/uploads/2025-12-25/1766667721537_submission.png)\n\n---\n*此 Issue 由 BananaGuava 網頁版匿名投稿*",
     "labels": [
       {
         "id": "LA_kwDOQs_aBM8AAAACTFLRBw",
@@ -112,7 +112,7 @@
     "url": "https://github.com/yisuchen/YourGuavaBanana/issues/106"
   },
   {
-    "body": "### 提示詞內容\n地區: {{國家:台灣}}\n在地化 : {{國家:台灣}} 在地隱藏元素\n人物與場景 : {{體型:消瘦}}的 {{國家:台灣}} 在地聖誕老人, 穿著在地化衣服、飾品 ，褲子為聖誕長褲，頭戴聖誕帽, 正要去送聖誕禮物。\n麋鹿替換成 {{國家:台灣}} 特色犬種,眼神明亮,頭戴聖誕帽或鹿角帽)。\n雪橇替換成 {{國家:台灣}} 特色交通工具，上面還有許多聖誕禮物。\n周遭至少有5項 {{國家:台灣}} 隱藏元素, 元素不要重複出現。\n在圖像中間上方加入 LED 金色燈光 「{{文字:Merry Christmas}}」。\n在圖像中間下方加入 LED 金色燈光「{{文字:Ho! Ho! Ho!}}」。\n風格: 超寫實風格, 電影級拍攝, 光線溫和明亮。\n字體: 字體必須符合 {{國家:台灣}} 使用文字。\n\n\n\n### 分類\n人像\n\n### 來源 (Source)\nyisu\n\n### 標籤\n聖誕\n\nVariables (key=value)\n文字 = 聖誕快樂,Merry Christmas, Ho! Ho! Ho!\n國家 = 台灣,越南,菲律賓\n體型 = 消瘦,\n\n### 預覽圖片\n![Preview Image](https://raw.githubusercontent.com/yisuchen/YourGuavaBanana/main/uploads/2025-12-24/1766558761754_submission.png)\n\n---\n*此 Issue 由 BananaGuava 網頁版匿名投稿*",
+    "body": "### 提示詞內容\n地區: {{國家:台灣}}\n在地化 : {{國家:台灣}} 在地隱藏元素\n人物與場景 : {{體型:消瘦}}的 {{國家:台灣}} 在地聖誕老人, 穿著在地化衣服、飾品 ，褲子為聖誕長褲，頭戴聖誕帽, 正要去送聖誕禮物。\n麋鹿替換成 {{國家:台灣}} 特色犬種,眼神明亮,頭戴聖誕帽或鹿角帽)。\n雪橇替換成 {{國家:台灣}} 特色交通工具，上面還有許多聖誕禮物。\n周遭至少有5項 {{國家:台灣}} 隱藏元素, 元素不要重複出現。\n在圖像中間上方加入 LED 金色燈光 「{{文字:Merry Christmas}}」。\n在圖像中間下方加入 LED 金色燈光「{{文字:Ho! Ho! Ho!}}」。\n風格: 超寫實風格, 電影級拍攝, 光線溫和明亮。\n字體: 字體必須符合 {{國家:台灣}} 使用文字。\n\n\n\n### 分類\n人像\n\n### 來源 (Source)\nyisu\n\n### 標籤\n聖誕\n\nVariables (key=value)\n文字 = 聖誕快樂 | Merry Christmas | Ho! Ho! Ho!\n國家 = 台灣 | 越南 | 菲律賓\n體型 = 消瘦 | \n\n### 預覽圖片\n![Preview Image](https://raw.githubusercontent.com/yisuchen/YourGuavaBanana/main/uploads/2025-12-24/1766558761754_submission.png)\n\n---\n*此 Issue 由 BananaGuava 網頁版匿名投稿*",
     "labels": [
       {
         "id": "LA_kwDOQs_aBM8AAAACTFLRBw",
