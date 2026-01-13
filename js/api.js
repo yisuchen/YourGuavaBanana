@@ -1,6 +1,6 @@
-import { CONFIG, FIXED_CATEGORIES } from './config.js';
+import { CONFIG } from './config.js';
 import { state } from './state.js';
-import { extractSection, extractImage, cleanContent } from './utils.js';
+import { processIssue, extractMetadata } from './prompt-parser.js';
 
 export async function fetchPrompts() {
     const { owner, repo, label, per_page } = CONFIG;
@@ -34,48 +34,7 @@ export async function fetchPrompts() {
         }
 
         // Load variables from both sources
-        let defaultVars = {};
-        let localVars = {};
-
-        // Try default_variables.json
-        try {
-            const defVarsResponse = await fetch('default_variables.json');
-            if (defVarsResponse.ok) {
-                defaultVars = await defVarsResponse.json();
-                console.log('Loaded from default_variables.json');
-            }
-        } catch (e) {
-            console.log('default_variables.json not found');
-        }
-
-        // Try local variables.json
-        try {
-            const varsResponse = await fetch('variables.json');
-            if (varsResponse.ok) {
-                localVars = await varsResponse.json();
-                console.log('Loaded from variables.json');
-            }
-        } catch (e) {
-            console.log('variables.json not found or failed to load');
-        }
-
-        // Merge variables: defaultVars + localVars
-        state.variables = {};
-        
-        const mergeIntoState = (sourceObj) => {
-            Object.keys(sourceObj).forEach(rawKey => {
-                const key = rawKey.toLowerCase().replace(/\s+/g, '_');
-                if (!state.variables[key]) {
-                    state.variables[key] = [];
-                }
-                const values = Array.isArray(sourceObj[rawKey]) ? sourceObj[rawKey] : [];
-                // Merge and deduplicate
-                state.variables[key] = [...new Set([...state.variables[key], ...values])];
-            });
-        };
-
-        mergeIntoState(defaultVars);
-        mergeIntoState(localVars);
+        await loadVariables();
 
         // Fallback to API if data not loaded
         if (!data) {
@@ -112,7 +71,7 @@ export async function fetchPrompts() {
         }
 
         // Extract unique Categories and Tags
-        extractMetadata();
+        extractMetadata(state);
 
     } catch (error) {
         console.error('Error fetching prompts:', error);
@@ -120,89 +79,49 @@ export async function fetchPrompts() {
     }
 }
 
-function processIssue(issue) {
-    // 1. Title Processing
-    let displayTitle = issue.title.replace(/^[[\]]Prompt[[\]]:\s*/i, '').trim();
-    if (!displayTitle || displayTitle === '請在此輸入標題') {
-        displayTitle = '未命名提示詞';
-    }
+async function loadVariables() {
+    let defaultVars = {};
+    let localVars = {};
 
-    // 2. Body Parsing
-    const tagsFromSection = extractSection(issue.body, '標籤');
-    const categoryFromSection = extractSection(issue.body, '分類');
-
-    // Parse Variables from body (localized variables for this prompt)
-    const localVariables = {};
-    const varMatch = issue.body.match(/Variables\s*\(key=value\)\s*([\s\S]*?)(?=\n\n|###|$)/i);
-    if (varMatch) {
-        const lines = varMatch[1].trim().split('\n');
-        lines.forEach(line => {
-            const parts = line.split('=');
-            if (parts.length >= 2) {
-                const key = parts[0].trim().toLowerCase().replace(/\s+/g, '_');
-                // Split by pipe '|' to allow commas in values (e.g. descriptions)
-                const values = parts.slice(1).join('=').split('|').map(v => v.trim()).filter(v => v);
-                localVariables[key] = values;
-                // Also store without underscore for better matching
-                localVariables[parts[0].trim().toLowerCase()] = values;
-            }
-        });
-    }
-
-    let customTags = [];
-    if (tagsFromSection) {
-        customTags = cleanContent(tagsFromSection)
-            .split(/[,，]/)
-            .map(t => t.trim())
-            .filter(t => t);
-    }
-
-    // 3. GitHub Labels (exclude config label and 'pending')
-    const githubLabels = issue.labels
-        .map(l => typeof l === 'string' ? l : l.name)
-        .filter(l => l !== CONFIG.label && l !== 'pending');
-
-    const rawPromptText = extractSection(issue.body, '提示詞內容');
-    // Remove Markdown images from prompt text to keep it clean
-    const cleanPromptText = rawPromptText ? cleanContent(rawPromptText.replace(/!\[.*?]\[.*?\]/g, '')).trim() : '';
-
-    return {
-        ...issue,
-        displayTitle: displayTitle,
-        promptText: cleanPromptText,
-        localVariables,
-        notes: extractSection(issue.body, '使用說明'),
-        source: extractSection(issue.body, '來源 (Source)'),
-        category: categoryFromSection ? categoryFromSection.trim() : '未分類',
-        imageUrl: extractImage(issue.body),
-        customTags,
-        computedTags: [...new Set([...githubLabels, ...customTags])]
-    };
-}
-
-function extractMetadata() {
-    state.categories = new Set(FIXED_CATEGORIES);
-    state.tags = new Set();
-
-    // Use all available prompts for metadata to keep filters consistent
-    const combined = [...state.allPrompts, ...state.previewPrompts];
-
-    // First pass: validate categories (only allow fixed ones)
-    combined.forEach(p => {
-        if (p.category && !state.categories.has(p.category)) {
-            // If category is not in the fixed list, force it to '其他（待歸納）' or '未分類'
-            // For UI consistency, we'll keep the original p.category but won't add it to filter list
+    // Try default_variables.json
+    try {
+        const defVarsResponse = await fetch('default_variables.json');
+        if (defVarsResponse.ok) {
+            defaultVars = await defVarsResponse.json();
+            console.log('Loaded from default_variables.json');
         }
-    });
+    } catch (e) {
+        console.log('default_variables.json not found');
+    }
 
-    // Second pass: collect tags that are not categories to keep them distinct
-    combined.forEach(p => {
-        p.computedTags.forEach(t => {
-            if (!state.categories.has(t)) {
-                state.tags.add(t);
+    // Try local variables.json
+    try {
+        const varsResponse = await fetch('variables.json');
+        if (varsResponse.ok) {
+            localVars = await varsResponse.json();
+            console.log('Loaded from variables.json');
+        }
+    } catch (e) {
+        console.log('variables.json not found or failed to load');
+    }
+
+    // Merge variables: defaultVars + localVars
+    state.variables = {};
+    
+    const mergeIntoState = (sourceObj) => {
+        Object.keys(sourceObj).forEach(rawKey => {
+            const key = rawKey.toLowerCase().replace(/\s+/g, '_');
+            if (!state.variables[key]) {
+                state.variables[key] = [];
             }
+            const values = Array.isArray(sourceObj[rawKey]) ? sourceObj[rawKey] : [];
+            // Merge and deduplicate
+            state.variables[key] = [...new Set([...state.variables[key], ...values])];
         });
-    });
+    };
+
+    mergeIntoState(defaultVars);
+    mergeIntoState(localVars);
 }
 
 export async function reportNewVariable(key, value) {
